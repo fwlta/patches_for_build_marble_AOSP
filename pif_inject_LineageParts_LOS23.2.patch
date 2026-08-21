@@ -1,0 +1,1024 @@
+diff --git a/AndroidManifest.xml b/AndroidManifest.xml
+index 67dd1f9a22bfb1be1f55a850a16856b720d5b717..c065bbff5fbefc87d6e99decfc2ef8b0d50ec464 100644
+--- a/AndroidManifest.xml
++++ b/AndroidManifest.xml
+@@ -10,6 +10,7 @@
+     android:versionCode="1"
+     android:versionName="1.0">
+ 
++    <uses-permission android:name="android.permission.INTERNET" />
+     <uses-permission android:name="android.permission.WRITE_MEDIA_STORAGE" />
+     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+@@ -167,6 +168,37 @@
+                 android:resource="@string/summary_empty" />
+         </activity-alias>
+ 
++        <!-- Play Integrity Fix settings (System category) -->
++        <activity-alias
++            android:name=".pif.PlayIntegrityFix"
++            android:exported="true"
++            android:label="@string/play_integrity_fix_title"
++            android:targetActivity="PartsActivity">
++            <intent-filter>
++                <action android:name="com.android.settings.action.IA_SETTINGS" />
++                <category android:name="android.intent.category.DEFAULT" />
++            </intent-filter>
++
++            <meta-data
++                android:name="com.android.settings.category"
++                android:value="com.android.settings.category.ia.system" />
++            <meta-data
++                android:name="com.android.settings.icon"
++                android:resource="@drawable/ic_settings_buttons" />
++            <meta-data
++                android:name="com.android.settings.icon_tintable"
++                android:value="true" />
++            <meta-data
++                android:name="com.android.settings.order"
++                android:value="-254" />
++            <meta-data
++                android:name="com.android.settings.profile"
++                android:value="primary_profile_only" />
++            <meta-data
++                android:name="com.android.settings.summary"
++                android:resource="@string/play_integrity_fix_summary" />
++        </activity-alias>
++
+         <activity android:name=".gestures.KeyHandler" />
+ 
+         <!-- Profiles settings (System category) -->
+diff --git a/res/values/strings.xml b/res/values/strings.xml
+index 9a0010f232549133bbf56776b0f61c42a1c2a44c..fb485496a5f9e89d2d188e192508bb9d322f864f 100644
+--- a/res/values/strings.xml
++++ b/res/values/strings.xml
+@@ -691,4 +691,36 @@
+     <string name="sms_security_check_limit_summary">Apps can send %s messages in 1 minute before requiring confirmation</string>
+     <string name="sms_security_check_limit_summary_none">Apps are not allowed to send any messages without confirmation</string>
+     <string name="sms_security_check_limit_always_confirm">Always confirm</string>
++
++    <string name="play_integrity_fix_title">Play Integrity Fix</string>
++    <string name="play_integrity_fix_summary">Manage PIF configuration and device fingerprints for basic integrity</string>
++    <string name="pif_status">Status</string>
++    <string name="pif_active_config">Active configuration</string>
++    <string name="pif_no_config">No configuration loaded</string>
++    <string name="pif_config_loaded">Configuration loaded</string>
++    <string name="pif_fetch_pixel_beta">Fetch Pixel Beta fingerprint</string>
++    <string name="pif_fetch_pixel_beta_summary">Download latest Pixel Beta fingerprint from Google</string>
++    <string name="pif_fetching">Fetching from Google\u2026</string>
++    <string name="pif_fetched_model">Fetched fingerprint for %s</string>
++    <string name="pif_import_config">Import configuration</string>
++    <string name="pif_import_config_summary">Import PIF config from a file</string>
++    <string name="pif_imported_as">Imported as %s</string>
++    <string name="pif_delete_config">Delete active configuration</string>
++    <string name="pif_delete_config_summary">Remove the currently active config file</string>
++    <string name="pif_delete_title">Delete %s?</string>
++    <string name="pif_delete_message">This configuration file will be permanently removed.</string>
++    <string name="pif_delete">Delete</string>
++    <string name="pif_deleted">Deleted %s</string>
++    <string name="pif_settings">Settings</string>
++    <string name="pif_spoof_photos">Spoof Google Photos</string>
++    <string name="pif_spoof_photos_summary">Unlimited original quality backup</string>
++    <string name="pif_config_details">Configuration details</string>
++    <string name="pif_failed">Failed: %s</string>
++    <string name="pif_select_device">Select device</string>
++    <string name="pif_generating">Generating configuration\u2026</string>
++    <string name="pif_footer_title">Passing basic integrity</string>
++    <string name="pif_footer_body">1. Tap \"Fetch Pixel Beta fingerprint\" and select a device from the available list.\n2. If no devices are found, import a working PIF config from a trusted source. Config files are not provided; you must find one yourself.\n3. Recheck your Play Integrity status.\n\nAlways delete the active configuration before loading a new one. Loading an expired PIF config will cause strong integrity via TrickyStore to fail, even with a valid keybox.</string>
++    <string name="pif_select_channel">Select channel</string>
++    <string name="pif_channel_latest_release">Latest release</string>
++    <string name="pif_channel_canary_release">Canary release</string>
+ </resources>
+diff --git a/res/xml/parts_catalog.xml b/res/xml/parts_catalog.xml
+index 8906d2f0847b1c7b4fab5d1a56ce68fb41241a83..5aec103b5d1c6fd40213327791a1bb2cf580387a 100644
+--- a/res/xml/parts_catalog.xml
++++ b/res/xml/parts_catalog.xml
+@@ -100,4 +100,10 @@
+           android:title="@string/live_display_color_profile_title"
+           android:fragment="org.lineageos.lineageparts.livedisplay.ColorProfileFragment"
+           lineage:xmlRes="@xml/color_profile_settings" />
++
++    <part android:key="play_integrity_fix"
++          android:title="@string/play_integrity_fix_title"
++          android:summary="@string/play_integrity_fix_summary"
++          android:fragment="org.lineageos.lineageparts.pif.PlayIntegrityFix"
++          lineage:xmlRes="@xml/play_integrity_fix" />
+ </parts-catalog>
+diff --git a/res/xml/play_integrity_fix.xml b/res/xml/play_integrity_fix.xml
+new file mode 100644
+index 0000000000000000000000000000000000000000..4a68758df687aa8bd08391045e365401103a6280
+--- /dev/null
++++ b/res/xml/play_integrity_fix.xml
+@@ -0,0 +1,61 @@
++<?xml version="1.0" encoding="utf-8"?>
++<!--
++     SPDX-FileCopyrightText: crDroid Android Project
++     SPDX-FileCopyrightText: The LineageOS Project
++     SPDX-License-Identifier: Apache-2.0
++-->
++<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
++    android:title="@string/play_integrity_fix_title">
++
++    <PreferenceCategory
++        android:key="pif_status_category"
++        android:title="@string/pif_status">
++
++        <Preference
++            android:key="pif_active_config"
++            android:title="@string/pif_active_config"
++            android:summary="@string/pif_no_config"
++            android:selectable="false" />
++
++        <Preference
++            android:key="pif_fetch_beta"
++            android:title="@string/pif_fetch_pixel_beta"
++            android:summary="@string/pif_fetch_pixel_beta_summary" />
++
++        <Preference
++            android:key="pif_import_config"
++            android:title="@string/pif_import_config"
++            android:summary="@string/pif_import_config_summary" />
++
++        <Preference
++            android:key="pif_delete_config"
++            android:title="@string/pif_delete_config"
++            android:summary="@string/pif_delete_config_summary" />
++    </PreferenceCategory>
++
++    <PreferenceCategory
++        android:key="pif_settings_category"
++        android:title="@string/pif_settings">
++
++        <lineageos.preference.LineageSecureSettingSwitchPreference
++            android:key="spoof_pif_photos"
++            android:title="@string/pif_spoof_photos"
++            android:summary="@string/pif_spoof_photos_summary"
++            android:defaultValue="true" />
++    </PreferenceCategory>
++
++    <PreferenceCategory
++        android:key="pif_footer_category"
++        android:title="@string/pif_footer_title">
++
++        <Preference
++            android:key="pif_footer"
++            android:title="@string/pif_footer_body"
++            android:selectable="false" />
++    </PreferenceCategory>
++
++    <PreferenceCategory
++        android:key="pif_config_details_category"
++        android:title="@string/pif_config_details" />
++
++</PreferenceScreen>
+diff --git a/src/org/lineageos/lineageparts/pif/PlayIntegrityFix.java b/src/org/lineageos/lineageparts/pif/PlayIntegrityFix.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..21648e6ff6eec608f00dceeca21d1b6639a57921
+--- /dev/null
++++ b/src/org/lineageos/lineageparts/pif/PlayIntegrityFix.java
+@@ -0,0 +1,845 @@
++/*
++ * SPDX-FileCopyrightText: crDroid Android Project
++ * SPDX-FileCopyrightText: The LineageOS Project
++ * SPDX-License-Identifier: Apache-2.0
++ */
++package org.lineageos.lineageparts.pif;
++
++import android.app.Activity;
++import android.app.ActivityManager;
++import android.content.Context;
++import android.content.Intent;
++import android.os.Bundle;
++import android.os.Handler;
++import android.os.Looper;
++import android.os.UserHandle;
++import android.provider.Settings;
++import android.text.TextUtils;
++import android.util.Log;
++import android.widget.Toast;
++
++import androidx.activity.result.ActivityResultLauncher;
++import androidx.activity.result.contract.ActivityResultContracts;
++import androidx.appcompat.app.AlertDialog;
++import androidx.preference.Preference;
++import androidx.preference.PreferenceCategory;
++
++import org.json.JSONObject;
++import org.lineageos.lineageparts.R;
++import org.lineageos.lineageparts.SettingsPreferenceFragment;
++
++import java.io.InputStream;
++import java.net.URL;
++import java.nio.charset.StandardCharsets;
++import java.util.ArrayList;
++import java.util.LinkedHashMap;
++import java.util.List;
++import java.util.Map;
++import java.util.concurrent.ExecutorService;
++import java.util.concurrent.Executors;
++
++public class PlayIntegrityFix extends SettingsPreferenceFragment {
++
++    private static final String TAG = "PlayIntegrityFix";
++
++    private static final String PIF_CONFIG_KEY = "spoof_pif_config";
++    private static final String PIF_CONFIG_NAME = "pif.json";
++
++    private static final String GOOGLE_URL = "https://developer.android.com";
++    private static final String FLASH_URL = "https://flash.android.com";
++    private static final String FLASH_API = "https://content-flashstation-pa.googleapis.com/v1/builds";
++    private static final String PIXEL_BULLETIN_URL =
++            "https://source.android.com/docs/security/bulletin/pixel";
++
++    private static final String VENDING_PACKAGE = "com.android.vending";
++    private static final String GMS_PACKAGE = "com.google.android.gms";
++    private static final String PHOTOS_PACKAGE = "com.google.android.apps.photos";
++
++    private static final Map<String, String> DEVICE_MODEL_MAP = new LinkedHashMap<>();
++    static {
++        DEVICE_MODEL_MAP.put("oriole", "Pixel 6");
++        DEVICE_MODEL_MAP.put("raven", "Pixel 6 Pro");
++        DEVICE_MODEL_MAP.put("bluejay", "Pixel 6a");
++        DEVICE_MODEL_MAP.put("panther", "Pixel 7");
++        DEVICE_MODEL_MAP.put("cheetah", "Pixel 7 Pro");
++        DEVICE_MODEL_MAP.put("lynx", "Pixel 7a");
++        DEVICE_MODEL_MAP.put("shiba", "Pixel 8");
++        DEVICE_MODEL_MAP.put("tangorpro", "Pixel Tablet");
++        DEVICE_MODEL_MAP.put("felix", "Pixel Fold");
++        DEVICE_MODEL_MAP.put("husky", "Pixel 8 Pro");
++        DEVICE_MODEL_MAP.put("akita", "Pixel 8a");
++        DEVICE_MODEL_MAP.put("tokay", "Pixel 9");
++        DEVICE_MODEL_MAP.put("caiman", "Pixel 9 Pro");
++        DEVICE_MODEL_MAP.put("komodo", "Pixel 9 Pro XL");
++        DEVICE_MODEL_MAP.put("comet", "Pixel 9 Pro Fold");
++        DEVICE_MODEL_MAP.put("tegu", "Pixel 9a");
++        DEVICE_MODEL_MAP.put("frankel", "Pixel 10");
++        DEVICE_MODEL_MAP.put("blazer", "Pixel 10 Pro");
++        DEVICE_MODEL_MAP.put("mustang", "Pixel 10 Pro XL");
++        DEVICE_MODEL_MAP.put("rango", "Pixel 10 Pro Fold");
++        DEVICE_MODEL_MAP.put("stallion", "Pixel 10a");
++    }
++
++    private static final List<String> CONFIG_DETAILS_ORDER = new ArrayList<>();
++    static {
++        CONFIG_DETAILS_ORDER.add("MODEL");
++        CONFIG_DETAILS_ORDER.add("MANUFACTURER");
++        CONFIG_DETAILS_ORDER.add("BRAND");
++        CONFIG_DETAILS_ORDER.add("PRODUCT");
++        CONFIG_DETAILS_ORDER.add("DEVICE");
++        CONFIG_DETAILS_ORDER.add("FINGERPRINT");
++        CONFIG_DETAILS_ORDER.add("SECURITY_PATCH");
++        CONFIG_DETAILS_ORDER.add("ID");
++        CONFIG_DETAILS_ORDER.add("RELEASE");
++        CONFIG_DETAILS_ORDER.add("DEVICE_INITIAL_SDK_INT");
++    }
++
++    private enum PifChannel { LATEST_RELEASE, CANARY }
++
++    private static class PifDevice {
++        final String product;
++        final String device;
++        final String model;
++        final String otaUrl;
++
++        PifDevice(String product, String device, String model, String otaUrl) {
++            this.product = product;
++            this.device = device;
++            this.model = model;
++            this.otaUrl = otaUrl;
++        }
++    }
++
++    private static class PifFetchResult {
++        final String model;
++        final JSONObject pifData;
++        final String error;
++
++        private PifFetchResult(String model, JSONObject pifData, String error) {
++            this.model = model;
++            this.pifData = pifData;
++            this.error = error;
++        }
++
++        static PifFetchResult success(String model, JSONObject pifData) {
++            return new PifFetchResult(model, pifData, null);
++        }
++
++        static PifFetchResult error(String message) {
++            return new PifFetchResult(null, null, message);
++        }
++    }
++
++    private final ExecutorService mExecutor = Executors.newSingleThreadExecutor();
++    private final Handler mMainHandler = new Handler(Looper.getMainLooper());
++
++    private Map<String, String> mActiveConfigData = new LinkedHashMap<>();
++
++    private final ActivityResultLauncher<Intent> mImportLauncher =
++            registerForActivityResult(new ActivityResultContracts.StartActivityForResult(),
++                    result -> {
++                        if (result.getResultCode() == Activity.RESULT_OK
++                                && result.getData() != null
++                                && result.getData().getData() != null) {
++                            try {
++                                final String content;
++                                try (InputStream input = requireContext().getContentResolver()
++                                        .openInputStream(result.getData().getData())) {
++                                    content = new String(readAll(input), StandardCharsets.UTF_8);
++                                }
++                                final String normalized = normalizePifPayload(content);
++                                Settings.Secure.putString(requireContext().getContentResolver(),
++                                        PIF_CONFIG_KEY, normalized);
++                                restartPifPackages();
++                                toast(getString(R.string.pif_imported_as, PIF_CONFIG_NAME));
++                                refreshStatus();
++                            } catch (Exception e) {
++                                toast(getString(R.string.pif_failed, e.getMessage()));
++                            }
++                        }
++                    });
++
++    @Override
++    public void onCreate(Bundle savedInstanceState) {
++        super.onCreate(savedInstanceState);
++        addPreferencesFromResource(R.xml.play_integrity_fix);
++
++        findPreference("pif_fetch_beta").setOnPreferenceClickListener(preference -> {
++            showChannelSelectionDialog();
++            return true;
++        });
++
++        findPreference("pif_import_config").setOnPreferenceClickListener(preference -> {
++            Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
++            intent.addCategory(Intent.CATEGORY_OPENABLE);
++            intent.setType("*/*");
++            mImportLauncher.launch(intent);
++            return true;
++        });
++
++        findPreference("pif_delete_config").setOnPreferenceClickListener(preference -> {
++            showDeleteDialog();
++            return true;
++        });
++
++        refreshStatus();
++    }
++
++    @Override
++    public void onDestroy() {
++        super.onDestroy();
++        mExecutor.shutdown();
++    }
++
++    @Override
++    public void onResume() {
++        super.onResume();
++        refreshStatus();
++    }
++
++    private void refreshStatus() {
++        String content = Settings.Secure.getStringForUser(requireContext().getContentResolver(),
++                PIF_CONFIG_KEY, UserHandle.USER_CURRENT);
++        mActiveConfigData = !TextUtils.isEmpty(content) ? readConfigData(content)
++                : new LinkedHashMap<>();
++        boolean exists = !mActiveConfigData.isEmpty();
++
++        Preference activePref = findPreference("pif_active_config");
++        if (exists) {
++            String model = mActiveConfigData.get("MODEL");
++            String fingerprint = mActiveConfigData.get("FINGERPRINT");
++            activePref.setTitle(PIF_CONFIG_NAME);
++            if (!TextUtils.isEmpty(model)) {
++                String summary = "MODEL: " + model;
++                if (!TextUtils.isEmpty(fingerprint)) {
++                    summary += "\nFINGERPRINT: " + fingerprint;
++                }
++                activePref.setSummary(summary);
++            } else {
++                activePref.setSummary(getString(R.string.pif_config_loaded));
++            }
++        } else {
++            activePref.setTitle(getString(R.string.pif_active_config));
++            activePref.setSummary(getString(R.string.pif_no_config));
++        }
++
++        findPreference("pif_delete_config").setEnabled(exists);
++
++        populateConfigDetails(mActiveConfigData);
++    }
++
++    private void populateConfigDetails(Map<String, String> data) {
++        PreferenceCategory category = findPreference("pif_config_details_category");
++        if (category == null) {
++            return;
++        }
++        category.removeAll();
++
++        if (data.isEmpty()) {
++            return;
++        }
++
++        for (String key : CONFIG_DETAILS_ORDER) {
++            String value = data.get(key);
++            if (value == null) {
++                continue;
++            }
++            Preference pref = new Preference(requireContext());
++            pref.setTitle(key);
++            pref.setSummary(value);
++            pref.setSelectable(false);
++            category.addPreference(pref);
++        }
++
++        for (Map.Entry<String, String> entry : data.entrySet()) {
++            String key = entry.getKey();
++            if (CONFIG_DETAILS_ORDER.contains(key)
++                    || key.startsWith("spoof")
++                    || "DEBUG".equals(key)
++                    || "verboseLogs".equals(key)) {
++                continue;
++            }
++            Preference pref = new Preference(requireContext());
++            pref.setTitle(key);
++            pref.setSummary(entry.getValue());
++            pref.setSelectable(false);
++            category.addPreference(pref);
++        }
++    }
++
++    private void showDeleteDialog() {
++        new AlertDialog.Builder(requireContext())
++                .setTitle(getString(R.string.pif_delete_title, PIF_CONFIG_NAME))
++                .setMessage(R.string.pif_delete_message)
++                .setPositiveButton(R.string.pif_delete, (dialog, which) -> {
++                    try {
++                        Settings.Secure.putString(requireContext().getContentResolver(),
++                                PIF_CONFIG_KEY, null);
++                        restartPifPackages();
++                        toast(getString(R.string.pif_deleted, PIF_CONFIG_NAME));
++                        refreshStatus();
++                    } catch (Exception e) {
++                        toast(getString(R.string.pif_failed, e.getMessage()));
++                    }
++                })
++                .setNegativeButton(android.R.string.cancel, null)
++                .show();
++    }
++
++    private void showChannelSelectionDialog() {
++        final String[] channels = new String[] {
++                getString(R.string.pif_channel_latest_release),
++                getString(R.string.pif_channel_canary_release)
++        };
++        new AlertDialog.Builder(requireContext())
++                .setTitle(R.string.pif_select_channel)
++                .setItems(channels, (dialog, which) -> {
++                    PifChannel channel = which == 0
++                            ? PifChannel.LATEST_RELEASE : PifChannel.CANARY;
++                    fetchDevicesForChannel(channel);
++                })
++                .setNegativeButton(android.R.string.cancel, null)
++                .show();
++    }
++
++    private void fetchDevicesForChannel(PifChannel channel) {
++        Preference fetchPref = findPreference("pif_fetch_beta");
++        fetchPref.setSummary(getString(R.string.pif_fetching));
++        fetchPref.setEnabled(false);
++
++        mExecutor.execute(() -> {
++            try {
++                final List<PifDevice> devices;
++                final String apiKey;
++                if (channel == PifChannel.LATEST_RELEASE) {
++                    devices = fetchAvailableDevices();
++                    apiKey = null;
++                } else {
++                    Pair<List<PifDevice>, String> canary = fetchAvailableCanaryDevices();
++                    devices = canary.first;
++                    apiKey = canary.second;
++                }
++
++                mMainHandler.post(() -> {
++                    if (!isAdded()) {
++                        return;
++                    }
++                    if (devices.isEmpty()) {
++                        toast(getString(R.string.pif_failed, "No devices found"));
++                        return;
++                    }
++                    if (channel == PifChannel.CANARY && TextUtils.isEmpty(apiKey)) {
++                        toast(getString(R.string.pif_failed,
++                                "Failed to extract Flash Tool API key"));
++                        return;
++                    }
++
++                    final String[] modelNames = new String[devices.size()];
++                    for (int i = 0; i < devices.size(); i++) {
++                        modelNames[i] = devices.get(i).model;
++                    }
++
++                    new AlertDialog.Builder(requireContext())
++                            .setTitle(R.string.pif_select_device)
++                            .setItems(modelNames, (dialog, which) ->
++                                    generateAndSavePif(devices.get(which), channel, apiKey))
++                            .setNegativeButton(android.R.string.cancel, null)
++                            .show();
++                });
++            } catch (Exception e) {
++                mMainHandler.post(() -> {
++                    if (isAdded()) {
++                        toast(getString(R.string.pif_failed, e.getMessage()));
++                    }
++                });
++            } finally {
++                mMainHandler.post(() -> {
++                    if (isAdded()) {
++                        fetchPref.setSummary(getString(R.string.pif_fetch_pixel_beta_summary));
++                        fetchPref.setEnabled(true);
++                    }
++                });
++            }
++        });
++    }
++
++    private void generateAndSavePif(PifDevice device, PifChannel channel, String apiKey) {
++        Preference fetchPref = findPreference("pif_fetch_beta");
++        fetchPref.setSummary(getString(R.string.pif_generating));
++        fetchPref.setEnabled(false);
++
++        mExecutor.execute(() -> {
++            final PifFetchResult result;
++            try {
++                if (channel == PifChannel.LATEST_RELEASE) {
++                    result = buildPifFromDevice(device);
++                } else {
++                    result = buildCanaryPifFromDevice(device, apiKey == null ? "" : apiKey);
++                }
++            } catch (Exception e) {
++                mMainHandler.post(() -> {
++                    if (isAdded()) {
++                        toast(getString(R.string.pif_failed, e.getMessage()));
++                    }
++                });
++                return;
++            }
++
++            mMainHandler.post(() -> {
++                if (!isAdded()) {
++                    return;
++                }
++                if (result.error == null) {
++                    try {
++                        Settings.Secure.putString(requireContext().getContentResolver(),
++                                PIF_CONFIG_KEY, result.pifData.toString(2));
++                        restartPifPackages();
++                        toast(getString(R.string.pif_fetched_model, result.model));
++                        refreshStatus();
++                    } catch (Exception e) {
++                        toast(getString(R.string.pif_failed, e.getMessage()));
++                    }
++                } else {
++                    toast(getString(R.string.pif_failed, result.error));
++                }
++                fetchPref.setSummary(getString(R.string.pif_fetch_pixel_beta_summary));
++                fetchPref.setEnabled(true);
++            });
++        });
++    }
++
++    private void killPackage(String pkg) {
++        try {
++            ActivityManager am = (ActivityManager) requireContext()
++                    .getSystemService(Context.ACTIVITY_SERVICE);
++            am.forceStopPackage(pkg);
++        } catch (Exception e) {
++            // Ignore
++        }
++    }
++
++    private void restartPifPackages() {
++        killPackage(GMS_PACKAGE);
++        killPackage(VENDING_PACKAGE);
++    }
++
++    private void toast(String msg) {
++        Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show();
++    }
++
++    private static byte[] readAll(InputStream input) throws Exception {
++        java.io.ByteArrayOutputStream buffer = new java.io.ByteArrayOutputStream();
++        byte[] data = new byte[4096];
++        int nRead;
++        while ((nRead = input.read(data, 0, data.length)) != -1) {
++            buffer.write(data, 0, nRead);
++        }
++        return buffer.toByteArray();
++    }
++
++    /**
++     * Reads the config from a JSON string (stored in Settings.Secure).
++     * Also handles legacy prop-format strings in case an old value is present.
++     */
++    private static Map<String, String> readConfigData(String content) {
++        Map<String, String> result = new LinkedHashMap<>();
++        try {
++            String trimmed = content.trim();
++            if (trimmed.startsWith("{")) {
++                JSONObject json = new JSONObject(trimmed);
++                for (java.util.Iterator<String> it = json.keys(); it.hasNext(); ) {
++                    String key = it.next();
++                    result.put(key, json.optString(key, ""));
++                }
++            } else {
++                String[] lines = trimmed.split("\n");
++                for (String line : lines) {
++                    String l = line.trim();
++                    if (l.isEmpty() || l.startsWith("#") || l.startsWith("//")) {
++                        continue;
++                    }
++                    int eq = l.indexOf('=');
++                    if (eq > 0) {
++                        result.put(l.substring(0, eq).trim(), l.substring(eq + 1).trim());
++                    }
++                }
++            }
++        } catch (Exception e) {
++            Log.e(TAG, "Failed to read config", e);
++            return new LinkedHashMap<>();
++        }
++        return result;
++    }
++
++    /**
++     * Normalises an imported PIF payload (JSON or prop-format) to a JSON string
++     * suitable for storage in Settings.Secure.
++     */
++    private static String normalizePifPayload(String raw) throws Exception {
++        String trimmed = raw.trim();
++        if (trimmed.isEmpty()) {
++            throw new IllegalArgumentException("Configuration is empty");
++        }
++
++        final JSONObject json;
++        if (trimmed.startsWith("{")) {
++            json = new JSONObject(trimmed);
++        } else {
++            json = new JSONObject();
++            String[] lines = trimmed.split("\n");
++            for (String line : lines) {
++                String stripped = line.trim();
++                if (stripped.isEmpty() || stripped.startsWith("#") || stripped.startsWith("//")) {
++                    continue;
++                }
++                int eq = stripped.indexOf('=');
++                if (eq > 0) {
++                    String key = stripped.substring(0, eq).trim();
++                    String value = stripped.substring(eq + 1).trim();
++                    int hash = value.indexOf('#');
++                    if (hash > 0) {
++                        value = value.substring(0, hash).trim();
++                    }
++                    if (!key.isEmpty()) {
++                        json.put(key, value);
++                    }
++                }
++            }
++        }
++
++        if (json.length() == 0) {
++            throw new IllegalArgumentException("No PIF fields found");
++        }
++        return json.toString(2);
++    }
++
++    private static String fetchPartialUrl(String url, int maxBytes) throws Exception {
++        java.net.HttpURLConnection conn =
++                (java.net.HttpURLConnection) new URL(url).openConnection();
++        conn.setConnectTimeout(15000);
++        conn.setReadTimeout(15000);
++        try (InputStream input = conn.getInputStream()) {
++            byte[] buf = new byte[512];
++            StringBuilder sb = new StringBuilder();
++            int total = 0;
++            while (total < maxBytes) {
++                int read = input.read(buf);
++                if (read == -1) {
++                    break;
++                }
++                sb.append(new String(buf, 0, read, StandardCharsets.ISO_8859_1));
++                total += read;
++            }
++            return sb.toString();
++        }
++    }
++
++    /**
++     * Phase 1: Scrape Google developer site to find all available beta devices.
++     */
++    private static List<PifDevice> fetchAvailableDevices() throws Exception {
++        String versionsHtml = new String(
++                readAll(new URL(GOOGLE_URL + "/about/versions").openStream()),
++                StandardCharsets.UTF_8);
++        java.util.regex.Matcher vm = java.util.regex.Pattern
++                .compile("https://developer\\.android\\.com/about/versions/(\\d+)")
++                .matcher(versionsHtml);
++        java.util.TreeSet<Integer> knownVersions = new java.util.TreeSet<>();
++        while (vm.find()) {
++            knownVersions.add(Integer.parseInt(vm.group(1)));
++        }
++        if (knownVersions.isEmpty()) {
++            return new ArrayList<>();
++        }
++
++        int maxVersion = knownVersions.last();
++        List<Integer> versions = new ArrayList<>();
++        versions.add(maxVersion + 1);
++        versions.addAll(knownVersions.descendingSet());
++
++        for (int version : versions) {
++            try {
++                String downloadUrl = GOOGLE_URL + "/about/versions/" + version + "/download-ota";
++                String otaHtml = new String(readAll(new URL(downloadUrl).openStream()),
++                        StandardCharsets.UTF_8);
++                java.util.regex.Matcher om = java.util.regex.Pattern
++                        .compile("href=\"(https://dl\\.google\\.com/[^\"]*ota/([^/\"]+_beta)[^\"]*?)\"")
++                        .matcher(otaHtml);
++                List<PifDevice> devices = new ArrayList<>();
++                java.util.Set<String> seen = new java.util.HashSet<>();
++                while (om.find()) {
++                    String otaUrl = om.group(1);
++                    String product = om.group(2);
++                    String device = product.replace("_beta", "");
++                    if (seen.contains(device)) {
++                        continue;
++                    }
++                    seen.add(device);
++                    String model = DEVICE_MODEL_MAP.getOrDefault(device, device);
++                    devices.add(new PifDevice(product, device, model, otaUrl));
++                }
++                if (!devices.isEmpty()) {
++                    return devices;
++                }
++            } catch (Exception e) {
++                // continue
++            }
++        }
++        return new ArrayList<>();
++    }
++
++    /**
++     * Phase 2: Fetch OTA metadata for a specific device and build pif JSON.
++     */
++    private static PifFetchResult buildPifFromDevice(PifDevice pifDevice) {
++        try {
++            String partial = fetchPartialUrl(pifDevice.otaUrl, 4096);
++
++            java.util.regex.Matcher fm = java.util.regex.Pattern
++                    .compile("post-build=(.*)")
++                    .matcher(partial);
++            if (!fm.find()) {
++                return PifFetchResult.error("Could not extract fingerprint");
++            }
++            String fingerprint = fm.group(1).trim();
++
++            java.util.regex.Matcher sm = java.util.regex.Pattern
++                    .compile("security-patch-level=(.*)")
++                    .matcher(partial);
++            if (!sm.find()) {
++                return PifFetchResult.error("Could not extract security patch");
++            }
++            String securityPatch = sm.group(1).trim();
++
++            String[] fpParts = fingerprint.split("/");
++            String release = fpParts.length > 2
++                    ? fpParts[2].substring(fpParts[2].indexOf(':') + 1) : "";
++            String buildId = fpParts.length > 3 ? fpParts[3] : "";
++
++            JSONObject pifJson = new JSONObject();
++            pifJson.put("TYPE", "user");
++            pifJson.put("TAGS", "release-keys");
++            pifJson.put("ID", buildId);
++            pifJson.put("BRAND", "google");
++            pifJson.put("DEVICE", pifDevice.device);
++            pifJson.put("FINGERPRINT", fingerprint);
++            pifJson.put("MANUFACTURER", "Google");
++            pifJson.put("MODEL", pifDevice.model);
++            pifJson.put("PRODUCT", pifDevice.product);
++            pifJson.put("RELEASE", release);
++            pifJson.put("SECURITY_PATCH", securityPatch);
++            pifJson.put("DEVICE_INITIAL_SDK_INT", "21");
++            pifJson.put("DEBUG", false);
++            pifJson.put("SDK_INT", "32");
++            return PifFetchResult.success(pifDevice.model, pifJson);
++        } catch (Exception e) {
++            return PifFetchResult.error("Failed: " + e.getMessage());
++        }
++    }
++
++    private static Pair<List<PifDevice>, String> fetchAvailableCanaryDevices() throws Exception {
++        try {
++            String versionsHtml = new String(
++                    readAll(new URL(GOOGLE_URL + "/about/versions").openStream()),
++                    StandardCharsets.UTF_8);
++            java.util.regex.Matcher vm = java.util.regex.Pattern
++                    .compile("https://developer\\.android\\.com/about/versions/(\\d+)")
++                    .matcher(versionsHtml);
++            java.util.TreeSet<Integer> knownVersions = new java.util.TreeSet<>();
++            while (vm.find()) {
++                knownVersions.add(Integer.parseInt(vm.group(1)));
++            }
++            if (knownVersions.isEmpty()) {
++                return Pair.of(new ArrayList<>(), null);
++            }
++
++            int maxVersion = knownVersions.last();
++            List<Integer> versions = new ArrayList<>();
++            versions.add(maxVersion + 1);
++            versions.addAll(knownVersions.descendingSet());
++
++            java.util.regex.Pattern rowPattern = java.util.regex.Pattern
++                    .compile("<tr id=\"([^\"]+)\">\\s*<td[^>]*>([^<]+)</td>",
++                            java.util.regex.Pattern.DOTALL);
++
++            for (int version : versions) {
++                try {
++                    String latestHtml = new String(
++                            readAll(new URL(GOOGLE_URL + "/about/versions/" + version).openStream()),
++                            StandardCharsets.UTF_8);
++                    java.util.regex.Matcher qm = java.util.regex.Pattern
++                            .compile("href=\"(/about/versions/" + version + "/qpr(\\d+)/download-ota)\"")
++                            .matcher(latestHtml);
++                    int bestQpr = -1;
++                    String qprPath = null;
++                    while (qm.find()) {
++                        int qpr = Integer.parseInt(qm.group(2));
++                        if (qpr > bestQpr) {
++                            bestQpr = qpr;
++                            qprPath = qm.group(1);
++                        }
++                    }
++                    if (qprPath == null) {
++                        continue;
++                    }
++
++                    String fiHtml = new String(readAll(new URL(GOOGLE_URL + qprPath).openStream()),
++                            StandardCharsets.UTF_8);
++
++                    List<PifDevice> devices = new ArrayList<>();
++                    java.util.Set<String> seen = new java.util.HashSet<>();
++                    java.util.regex.Matcher rm = rowPattern.matcher(fiHtml);
++                    while (rm.find()) {
++                        String device = rm.group(1);
++                        if (seen.contains(device)) {
++                            continue;
++                        }
++                        seen.add(device);
++                        String model = rm.group(2).trim();
++                        if (model.isEmpty()) {
++                            model = DEVICE_MODEL_MAP.getOrDefault(device, device);
++                        }
++                        devices.add(new PifDevice(device + "_beta", device, model, ""));
++                    }
++
++                    if (devices.isEmpty()) {
++                        continue;
++                    }
++
++                    String flashHtml = new String(readAll(new URL(FLASH_URL).openStream()),
++                            StandardCharsets.UTF_8);
++                    java.util.regex.Matcher km = java.util.regex.Pattern
++                            .compile("AIza[0-9A-Za-z_-]{35}")
++                            .matcher(flashHtml);
++                    String apiKey = km.find() ? km.group() : null;
++
++                    return Pair.of(devices, apiKey);
++                } catch (Exception e) {
++                    // continue
++                }
++            }
++            return Pair.of(new ArrayList<>(), null);
++        } catch (Exception e) {
++            Log.e(TAG, "Canary device fetch failed", e);
++            return Pair.of(new ArrayList<>(), null);
++        }
++    }
++
++    private static PifFetchResult buildCanaryPifFromDevice(PifDevice pifDevice, String apiKey) {
++        try {
++            if (apiKey.isEmpty()) {
++                return PifFetchResult.error("Flash Tool API key unavailable");
++            }
++
++            String buildsUrl = FLASH_API + "?product=" + pifDevice.product + "&key=" + apiKey;
++            java.net.HttpURLConnection buildsConn =
++                    (java.net.HttpURLConnection) new URL(buildsUrl).openConnection();
++            buildsConn.setRequestProperty("Referer", FLASH_URL);
++            buildsConn.setRequestProperty("X-Goog-Api-Key", apiKey);
++            buildsConn.setConnectTimeout(15000);
++            buildsConn.setReadTimeout(15000);
++
++            String buildsJson;
++            try (InputStream input = buildsConn.getInputStream()) {
++                buildsJson = new String(readAll(input), StandardCharsets.UTF_8);
++            }
++
++            JSONObject root = new JSONObject(buildsJson);
++            org.json.JSONArray buildsArray = root.optJSONArray("flashstationBuild");
++            if (buildsArray == null) {
++                return PifFetchResult.error("No flashstationBuild array in Flash Tool response");
++            }
++
++            String id = null;
++            String incremental = null;
++            String canaryId = null;
++
++            for (int i = buildsArray.length() - 1; i >= 0; i--) {
++                JSONObject b = buildsArray.optJSONObject(i);
++                if (b == null) {
++                    continue;
++                }
++                JSONObject meta = b.optJSONObject("previewMetadata");
++                if (meta == null || !meta.optBoolean("canary")) {
++                    continue;
++                }
++                String rc = b.optString("releaseCandidateName");
++                String bid = b.optString("buildId");
++                if (rc.isEmpty() || bid.isEmpty()) {
++                    continue;
++                }
++                id = rc;
++                incremental = bid;
++                String mId = meta.optString("id");
++                canaryId = mId.contains("canary-") ? mId : null;
++                break;
++            }
++
++            if (id == null || incremental == null) {
++                return PifFetchResult.error("No canary build found for " + pifDevice.product);
++            }
++
++            String fingerprint = "google/" + pifDevice.product + "/" + pifDevice.device
++                    + ":CANARY/" + id + "/" + incremental + ":user/release-keys";
++
++            String canaryMonth;
++            if (canaryId == null) {
++                return PifFetchResult.error("Failed to derive canary month id");
++            }
++            java.util.regex.Matcher cm = java.util.regex.Pattern
++                    .compile("canary-(\\d{4})(\\d{2})")
++                    .matcher(canaryId);
++            if (!cm.find()) {
++                return PifFetchResult.error("Failed to derive canary month id");
++            }
++            canaryMonth = cm.group(1) + "-" + cm.group(2);
++
++            String securityPatch;
++            try {
++                String bulletinHtml = new String(
++                        readAll(new URL(PIXEL_BULLETIN_URL).openStream()),
++                        StandardCharsets.UTF_8);
++                java.util.regex.Matcher bm = java.util.regex.Pattern
++                        .compile("<td>(" + canaryMonth + "-\\d{2})</td>")
++                        .matcher(bulletinHtml);
++                securityPatch = bm.find() ? bm.group(1) : canaryMonth + "-05";
++            } catch (Exception e) {
++                Log.d(TAG, "Bulletin fetch failed, using estimated patch: " + e.getMessage());
++                securityPatch = canaryMonth + "-05";
++            }
++
++            JSONObject pifJson = new JSONObject();
++            pifJson.put("TYPE", "user");
++            pifJson.put("TAGS", "release-keys");
++            pifJson.put("ID", id);
++            pifJson.put("BRAND", "google");
++            pifJson.put("DEVICE", pifDevice.device);
++            pifJson.put("FINGERPRINT", fingerprint);
++            pifJson.put("MANUFACTURER", "Google");
++            pifJson.put("MODEL", pifDevice.model);
++            pifJson.put("PRODUCT", pifDevice.product);
++            pifJson.put("RELEASE", "CANARY");
++            pifJson.put("SECURITY_PATCH", securityPatch);
++            pifJson.put("DEVICE_INITIAL_SDK_INT", "32");
++            pifJson.put("DEBUG", false);
++            pifJson.put("SDK_INT", "32");
++            return PifFetchResult.success(pifDevice.model, pifJson);
++        } catch (Exception e) {
++            return PifFetchResult.error("Failed: " + e.getMessage());
++        }
++    }
++
++    private static class Pair<A, B> {
++        final A first;
++        final B second;
++
++        Pair(A first, B second) {
++            this.first = first;
++            this.second = second;
++        }
++
++        static <A, B> Pair<A, B> of(A first, B second) {
++            return new Pair<>(first, second);
++        }
++    }
++}

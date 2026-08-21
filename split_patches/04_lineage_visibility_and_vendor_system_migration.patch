@@ -1,6 +1,6 @@
 project device/lineage/sepolicy/
 diff --git a/common/dynamic/service_contexts b/common/dynamic/service_contexts
-index bdc2533..8e4ee9b 100644
+index bdc2533c9cf42f80d1c1006ac11021673593567e..8e4ee9be8329f400806777c245cd75d1d8c78d1f 100644
 --- a/common/dynamic/service_contexts
 +++ b/common/dynamic/service_contexts
 @@ -1,5 +1,5 @@
@@ -20,10 +20,8 @@ index bdc2533..8e4ee9b 100644
  vendor.lineage.touch.IKeyDisabler/default                      u:object_r:hal_lineage_touch_service:s0
  vendor.lineage.touch.IKeySwapper/default                       u:object_r:hal_lineage_touch_service:s0
  vendor.lineage.touch.IStylusMode/default                       u:object_r:hal_lineage_touch_service:s0
-
-project device/lineage/sepolicy/
 diff --git a/common/private/file.te b/common/private/file.te
-index 6fb480b..b57ab7f 100644
+index 6fb480bfd8412bcbcd6edfbb987f1bc65a1fa729..b57ab7f887180b2bea4f350517b7e579c864cf21 100644
 --- a/common/private/file.te
 +++ b/common/private/file.te
 @@ -1,3 +1,6 @@
@@ -33,10 +31,8 @@ index 6fb480b..b57ab7f 100644
 +type lineage_platform_framework_file, file_type, system_file_type;
 +type lineage_permission_file, file_type, system_file_type;
 +type lineage_privapp_pkg_file, file_type, system_file_type;
-
-project device/lineage/sepolicy/
 diff --git a/common/private/file_contexts b/common/private/file_contexts
-index d4c34e9..dcca52f 100644
+index d4c34e9f1a0a81025c3444654733cc6935a5a95f..dcca52f2b01e3bfd824dd4f4708e6c666fdde6ae 100644
 --- a/common/private/file_contexts
 +++ b/common/private/file_contexts
 @@ -7,6 +7,52 @@
@@ -92,10 +88,39 @@ index d4c34e9..dcca52f 100644
  # Postinstall
  /system/bin/backuptool_ab\.functions              u:object_r:postinstall_exec:s0
  /system/bin/backuptool_ab\.sh                     u:object_r:postinstall_exec:s0
-
-project device/lineage/sepolicy/
+diff --git a/common/private/lineage_platform_framework.te b/common/private/lineage_platform_framework.te
+new file mode 100644
+index 0000000000000000000000000000000000000000..7d81ffec0e9bbf5be28c53a788dee15c4262e14e
+--- /dev/null
++++ b/common/private/lineage_platform_framework.te
+@@ -0,0 +1 @@
++allow { appdomain coredomain -untrusted_app_all } lineage_platform_framework_file:file r_file_perms;
+diff --git a/common/private/lineage_privapp_pkg.te b/common/private/lineage_privapp_pkg.te
+new file mode 100644
+index 0000000000000000000000000000000000000000..d04a9875663a39bfe7000fd3a7ad7f071ff1abf1
+--- /dev/null
++++ b/common/private/lineage_privapp_pkg.te
+@@ -0,0 +1,9 @@
++# Keep selected /system_ext/priv-app Lineage packages out of untrusted app reach.
++allow system_server lineage_privapp_pkg_file:dir r_dir_perms;
++allow system_server lineage_privapp_pkg_file:file r_file_perms;
++allow system_server lineage_privapp_pkg_file:lnk_file r_file_perms;
++
++# Trusted app domains that may still need visibility.
++allow { platform_app system_app priv_app } lineage_privapp_pkg_file:dir r_dir_perms;
++allow { platform_app system_app priv_app } lineage_privapp_pkg_file:file r_file_perms;
++allow { platform_app system_app priv_app } lineage_privapp_pkg_file:lnk_file r_file_perms;
+diff --git a/common/private/lineage_visibility_access.te b/common/private/lineage_visibility_access.te
+new file mode 100644
+index 0000000000000000000000000000000000000000..697eb11973efa7f5b3f7b0e329446104149458a6
+--- /dev/null
++++ b/common/private/lineage_visibility_access.te
+@@ -0,0 +1,3 @@
++# Allow trusted app domains to read relabeled Lineage permission XMLs if needed.
++allow platform_app lineage_permission_file:file r_file_perms;
++allow system_app lineage_permission_file:file r_file_perms;
 diff --git a/common/private/service_contexts b/common/private/service_contexts
-index cd984cb..b315ff6 100644
+index cd984cb946c352a3a7d0e293d99146cddc32b507..b315ff6934b7f0ed80b625c83468d192d7b6f329 100644
 --- a/common/private/service_contexts
 +++ b/common/private/service_contexts
 @@ -1,8 +1,8 @@
@@ -112,10 +137,8 @@ index cd984cb..b315ff6 100644
  profile                                   u:object_r:lineage_profile_service:s0
  
  adbroot_service                           u:object_r:adbroot_service:s0
-
-project device/lineage/sepolicy/
 diff --git a/common/private/system_server.te b/common/private/system_server.te
-index fdac25c..2d94397 100644
+index fdac25c55ed5bfb4fec4fc9ed8cc7d438478bedb..2d94397819429decbf3028a6259667ee9fc80528 100644
 --- a/common/private/system_server.te
 +++ b/common/private/system_server.te
 @@ -2,6 +2,9 @@ allow system_server storage_stub_file:dir getattr;
@@ -135,10 +158,8 @@ index fdac25c..2d94397 100644
 +
 +# Let LineageSettingsProvider bump sys.lineage_settings_*_version props.
 +set_prop(system_server, custom_version_prop)
-
-project device/lineage/sepolicy/
 diff --git a/common/private/untrusted_app.te b/common/private/untrusted_app.te
-index 77959f6..0a61ec6 100644
+index 77959f692368b6fd70f411cbb4bf115cf46b1920..0a61ec6d4f860b1ada07af640aa65ba9de15ba37 100644
 --- a/common/private/untrusted_app.te
 +++ b/common/private/untrusted_app.te
 @@ -1 +1,19 @@
@@ -162,10 +183,8 @@ index 77959f6..0a61ec6 100644
 +neverallow sdk_sandbox_all lineage_privapp_pkg_file:dir r_dir_perms;
 +neverallow sdk_sandbox_all lineage_privapp_pkg_file:file r_file_perms;
 +neverallow sdk_sandbox_all lineage_privapp_pkg_file:lnk_file r_file_perms;
-
-project device/lineage/sepolicy/
 diff --git a/common/vendor/file_contexts b/common/vendor/file_contexts
-index 2746446..3cf088c 100644
+index 2746446d912d4847011c84c984ca00a681f50dba..3cf088cc9a195d76d14cdfd292fccc468fdef422 100644
 --- a/common/vendor/file_contexts
 +++ b/common/vendor/file_contexts
 @@ -1,6 +1,10 @@
@@ -179,10 +198,8 @@ index 2746446..3cf088c 100644
  # Fingerprint HAL
  /(vendor|system/vendor)/bin/hw/android\.hardware\.biometrics\.fingerprint@2\.0-service u:object_r:hal_fingerprint_default_exec:s0
  /(vendor|system/vendor)/bin/hw/android\.hardware\.biometrics\.fingerprint-service\.lineage u:object_r:hal_fingerprint_default_exec:s0
-
-project device/lineage/sepolicy/
 diff --git a/qcom/vendor/hal_perf_default.te b/qcom/vendor/hal_perf_default.te
-index 9125357..1038217 100644
+index 912535713198b3e71d610ec0b90ec1adffbdbe53..10382171cd5e8f6360af9c82865ef0c4e45e72a9 100644
 --- a/qcom/vendor/hal_perf_default.te
 +++ b/qcom/vendor/hal_perf_default.te
 @@ -1,3 +1,4 @@
@@ -190,11 +207,9 @@ index 9125357..1038217 100644
 +rw_dir_file(hal_perf_default, proc_sched)
  
  rw_dir_file(hal_perf_default, proc_sched)
-
-
 project frameworks/base/
 diff --git a/cmds/idmap2/idmap2d/Idmap2Service.cpp b/cmds/idmap2/idmap2d/Idmap2Service.cpp
-index ee2656edf..7f3a45333 100644
+index ee2656edf542c4c2ccee524b4b110ef5e6b5f796..7f3a453331047049b47ee40d0fa712d7098e9abd 100644
 --- a/cmds/idmap2/idmap2d/Idmap2Service.cpp
 +++ b/cmds/idmap2/idmap2d/Idmap2Service.cpp
 @@ -62,7 +62,7 @@ using PolicyBitmask = android::ResTable_overlayable_policy_header::PolicyBitmask
@@ -206,10 +221,8 @@ index ee2656edf..7f3a45333 100644
  
  Status ok() {
    return Status::ok();
-
-project frameworks/base/
 diff --git a/core/java/android/content/res/AssetManager.java b/core/java/android/content/res/AssetManager.java
-index a500ced2c..5ec69cc8f 100644
+index a500ced2ca03736a5b765efaf94964fd7b4f2cf9..5ec69cc8f5404162f8350792405473139dc45da9 100644
 --- a/core/java/android/content/res/AssetManager.java
 +++ b/core/java/android/content/res/AssetManager.java
 @@ -84,7 +84,6 @@ public final class AssetManager implements AutoCloseable {
@@ -239,10 +252,27 @@ index a500ced2c..5ec69cc8f 100644
 +                + "org.system." + "platform-res.apk";
 +    }
  }
-
-project frameworks/base/
+diff --git a/core/java/android/provider/Settings.java b/core/java/android/provider/Settings.java
+index 36e2193cec11c32249f39b7d960a7f738062e69a..75ce166ae328a3c7932604849172e0c28bdc037f 100644
+--- a/core/java/android/provider/Settings.java
++++ b/core/java/android/provider/Settings.java
+@@ -13893,6 +13893,14 @@ public final class Settings {
+          */
+         public static final String IDENTITY_CHECK_NOTIFICATION_VIEW_DETAILS_CLICKED =
+                 "identity_check_notification_view_details_clicked";
++
++        /** Packages for which LineageOS components are hidden. @hide */
++        public static final String LINEAGE_VISIBILITY_BLOCKED_PACKAGES =
++                "lineage_visibility_blocked_packages";
++
++        /** Packages for which Play Store installation is spoofed. @hide */
++        public static final String LINEAGE_PLAY_STORE_INSTALL_SPOOF_PACKAGES =
++                "lineage_play_store_install_spoof_packages";
+     }
+ 
+     /**
 diff --git a/core/java/com/android/internal/content/om/OverlayConfig.java b/core/java/com/android/internal/content/om/OverlayConfig.java
-index 537cd0f09..0571382d7 100644
+index 537cd0f09ef884dd5b0066285a6d0ec50cf8741f..0571382d724d322e663c8081bb1788f07e21d9b9 100644
 --- a/core/java/com/android/internal/content/om/OverlayConfig.java
 +++ b/core/java/com/android/internal/content/om/OverlayConfig.java
 @@ -67,6 +67,8 @@ import javax.xml.parsers.ParserConfigurationException;
@@ -263,10 +293,8 @@ index 537cd0f09..0571382d7 100644
          }}.entrySet()) {
              final String targetPath = target.getKey();
              final String targetPackageName = target.getValue();
-
-project frameworks/base/
 diff --git a/core/jni/fd_utils.cpp b/core/jni/fd_utils.cpp
-index 74e44c760..d1a9d142c 100644
+index 74e44c76081c2a0d91b9c7c3e5349094bb4af90c..d1a9d142c70dcba0e3d988067c1bca73364acbb7 100644
 --- a/core/jni/fd_utils.cpp
 +++ b/core/jni/fd_utils.cpp
 @@ -33,6 +33,9 @@
@@ -288,10 +316,8 @@ index 74e44c760..d1a9d142c 100644
          "/dev/urandom",
          "/dev/ion",
          "/dev/dri/renderD129", // Fixes b/31172436
-
-project frameworks/base/
 diff --git a/libs/androidfw/AssetManager.cpp b/libs/androidfw/AssetManager.cpp
-index 348a609ec..4362bbc7f 100644
+index 348a609ecfe1b6542e81734ac175e722cb6d3f3a..4362bbc7faf25cb9d0e9b775dda0027d10a3f008 100644
 --- a/libs/androidfw/AssetManager.cpp
 +++ b/libs/androidfw/AssetManager.cpp
 @@ -63,7 +63,7 @@ static const bool kIsDebug = false;
@@ -303,10 +329,8 @@ index 348a609ec..4362bbc7f 100644
  static const char* kResourceCache = "resource-cache";
  
  static const char* kExcludeExtension = ".EXCLUDE";
-
-project frameworks/base/
 diff --git a/services/core/java/com/android/server/pm/ComputerEngine.java b/services/core/java/com/android/server/pm/ComputerEngine.java
-index 1cc02de12..25e05a6ac 100644
+index 3300f34817920d927b2b251fc54c2b629fa3f028..fe3851e468495ef540493f2e542af731f78627a7 100644
 --- a/services/core/java/com/android/server/pm/ComputerEngine.java
 +++ b/services/core/java/com/android/server/pm/ComputerEngine.java
 @@ -87,6 +87,7 @@ import android.content.pm.InstantAppResolveInfo;
@@ -317,32 +341,40 @@ index 1cc02de12..25e05a6ac 100644
  import android.content.pm.PackageManager;
  import android.content.pm.PackageManagerInternal;
  import android.content.pm.ParceledListSlice;
-@@ -188,6 +189,11 @@ import java.util.UUID;
+@@ -188,6 +189,7 @@ import java.util.UUID;
   */
  @VisibleForTesting(visibility = VisibleForTesting.Visibility.PRIVATE)
  public class ComputerEngine implements Computer {
-+    private static final String LINEAGE_VISIBILITY_BLOCKED_PACKAGES_SETTING =
-+            "lineage_visibility_blocked_packages";
-+    private static final String LINEAGE_PLAY_STORE_INSTALL_SPOOF_PACKAGES_SETTING =
-+            "lineage_play_store_install_spoof_packages";
 +    private static final String PLAY_STORE_PACKAGE_NAME = "com.android.vending";
  
      // TODO: Move this to its own interface implemented by the pm.Settings implementation
      protected class Settings {
-@@ -1273,6 +1279,11 @@ public class ComputerEngine implements Computer {
+@@ -1273,6 +1275,11 @@ public class ComputerEngine implements Computer {
                          mSettings.getSettingBase(UserHandle.getAppId(filterCallingUid));
                  PackageStateInternal resolvedSetting =
                          getPackageStateInternal(info.activityInfo.packageName, 0);
-+                if (shouldFilterLineageTargetPackage(resolvedSetting, filterCallingUid,
-+                        callingSetting, userId)) {
++                if (shouldFilterLineageTargetPackage(
++                        resolvedSetting, filterCallingUid)) {
 +                    resolveInfos.remove(i);
 +                    continue;
 +                }
                  if (resolveForStart
                          || !mAppsFilter.shouldFilterApplication(this,
                          filterCallingUid, callingSetting, resolvedSetting, userId)) {
-@@ -1486,9 +1497,6 @@ public class ComputerEngine implements Computer {
-     private static native boolean isDebuggable();
+@@ -1308,6 +1315,11 @@ public class ComputerEngine implements Computer {
+                         mSettings.getSettingBase(UserHandle.getAppId(filterCallingUid));
+                 PackageStateInternal resolvedSetting =
+                         getPackageStateInternal(info.serviceInfo.packageName, 0);
++                if (shouldFilterLineageTargetPackage(
++                        resolvedSetting, filterCallingUid)) {
++                    resolveInfos.remove(i);
++                    continue;
++                }
+                 if (!mAppsFilter.shouldFilterApplication(this,
+                         filterCallingUid, callingSetting, resolvedSetting, userId)) {
+                     continue;
+@@ -1486,9 +1498,6 @@ public class ComputerEngine implements Computer {
+     public static native boolean isDebuggable();
  
      public static boolean isMicrogSigned(AndroidPackage p) {
 -        if (!isDebuggable()) {
@@ -351,30 +383,44 @@ index 1cc02de12..25e05a6ac 100644
  
          // Allowlist the following apps:
          // * com.android.vending - microG Companion
-@@ -2655,9 +2663,162 @@ public class ComputerEngine implements Computer {
+@@ -2655,9 +2664,181 @@ public class ComputerEngine implements Computer {
          }
          int appId = UserHandle.getAppId(callingUid);
          final SettingBase callingPs = mSettings.getSettingBase(appId);
-+        if (shouldFilterLineageTargetPackage(ps, callingUid, callingPs, userId)) {
++        if (shouldFilterLineageTargetPackage(ps, callingUid)) {
 +            return true;
 +        }
          return mAppsFilter.shouldFilterApplication(this, callingUid, callingPs, ps, userId);
      }
  
 +    private boolean shouldFilterLineageTargetPackage(@Nullable PackageStateInternal targetPs,
-+            int callingUid, @Nullable SettingBase callingPs, @UserIdInt int userId) {
++            int callingUid) {
 +        if (targetPs == null) {
 +            return false;
 +        }
 +        if (!isLineageVisibilityTargetPackage(targetPs.getPackageName())) {
 +            return false;
 +        }
-+        if (isSystemOrRootOrShell(callingUid) || callingPs == null) {
++        int resolvedCallingUid = callingUid;
++        if (Process.isSdkSandboxUid(resolvedCallingUid)) {
++            resolvedCallingUid = Process.getAppUidForSdkSandboxUid(resolvedCallingUid);
++        }
++        if (Process.isIsolated(resolvedCallingUid)) {
++            resolvedCallingUid = getIsolatedOwner(resolvedCallingUid);
++        }
++        if (isSystemOrRootOrShell(resolvedCallingUid)) {
 +            return false;
 +        }
-+        final ArraySet<String> blockedPackages = getLineageVisibilityBlockedPackages(userId);
++        final int callingUserId = UserHandle.getUserId(resolvedCallingUid);
++        final ArraySet<String> blockedPackages =
++                getLineageVisibilityBlockedPackages(callingUserId);
 +        if (blockedPackages.isEmpty()) {
 +            return false;
++        }
++        final SettingBase callingPs =
++                mSettings.getSettingBase(UserHandle.getAppId(resolvedCallingUid));
++        if (callingPs == null) {
++            return true;
 +        }
 +        if (callingPs instanceof PackageSetting) {
 +            return blockedPackages.contains(((PackageSetting) callingPs).getPackageName());
@@ -429,12 +475,14 @@ index 1cc02de12..25e05a6ac 100644
 +    }
 +
 +    private ArraySet<String> getLineageVisibilityBlockedPackages(@UserIdInt int userId) {
-+        return getPackageSetForUserSetting(LINEAGE_VISIBILITY_BLOCKED_PACKAGES_SETTING, userId);
++        return getPackageSetForUserSetting(
++                android.provider.Settings.Secure.LINEAGE_VISIBILITY_BLOCKED_PACKAGES, userId);
 +    }
 +
 +    private ArraySet<String> getPlayStoreInstallSpoofPackages(@UserIdInt int userId) {
 +        return getPackageSetForUserSetting(
-+                LINEAGE_PLAY_STORE_INSTALL_SPOOF_PACKAGES_SETTING, userId);
++                android.provider.Settings.Secure.LINEAGE_PLAY_STORE_INSTALL_SPOOF_PACKAGES,
++                userId);
 +    }
 +
 +    private ArraySet<String> getPackageSetForUserSetting(@NonNull String settingName,
@@ -462,6 +510,9 @@ index 1cc02de12..25e05a6ac 100644
 +            return false;
 +        }
 +        int resolvedCallingUid = callingUid;
++        if (Process.isSdkSandboxUid(resolvedCallingUid)) {
++            resolvedCallingUid = Process.getAppUidForSdkSandboxUid(resolvedCallingUid);
++        }
 +        if (Process.isIsolated(resolvedCallingUid)) {
 +            resolvedCallingUid = getIsolatedOwner(resolvedCallingUid);
 +        }
@@ -514,7 +565,7 @@ index 1cc02de12..25e05a6ac 100644
      /**
       * @see #shouldFilterApplication(PackageStateInternal, int, ComponentName, int, int, boolean,
       * boolean)
-@@ -5122,6 +5283,9 @@ public class ComputerEngine implements Computer {
+@@ -5122,6 +5303,9 @@ public class ComputerEngine implements Computer {
          if (installSource == null) {
              throw new IllegalArgumentException("Unknown package: " + packageName);
          }
@@ -524,7 +575,7 @@ index 1cc02de12..25e05a6ac 100644
          String installerPackageName = installSource.mInstallerPackageName;
          if (installerPackageName != null) {
              final PackageStateInternal ps = mSettings.getPackage(installerPackageName);
-@@ -5168,6 +5332,9 @@ public class ComputerEngine implements Computer {
+@@ -5168,6 +5352,9 @@ public class ComputerEngine implements Computer {
          if (installSource == null) {
              return null;
          }
@@ -534,7 +585,7 @@ index 1cc02de12..25e05a6ac 100644
  
          installerPackageName = installSource.mInstallerPackageName;
          if (installerPackageName != null) {
-@@ -5531,6 +5698,10 @@ public class ComputerEngine implements Computer {
+@@ -5531,6 +5718,10 @@ public class ComputerEngine implements Computer {
          if (pkg == null) {
              return false;
          }
@@ -545,10 +596,8 @@ index 1cc02de12..25e05a6ac 100644
          final PackageStateInternal packageState = getPackageStateInternal(pkg.getPackageName());
          if (packageState == null) {
              return false;
-
-project frameworks/base/
 diff --git a/services/core/java/com/android/server/wm/ActivityRecord.java b/services/core/java/com/android/server/wm/ActivityRecord.java
-index 67474b85e..5f27e41df 100644
+index bd9ed05f97ab30bdaedfea4b966c02d48181596d..bb5f0493bc045ca1ed92e11bb165206ebf313254 100644
 --- a/services/core/java/com/android/server/wm/ActivityRecord.java
 +++ b/services/core/java/com/android/server/wm/ActivityRecord.java
 @@ -6921,6 +6921,8 @@ final class ActivityRecord extends WindowToken {
@@ -578,10 +627,8 @@ index 67474b85e..5f27e41df 100644
          }
      }
  
-
-project frameworks/base/
 diff --git a/services/core/java/com/android/server/wm/ActivityStarter.java b/services/core/java/com/android/server/wm/ActivityStarter.java
-index b0a800796..fbc017ce5 100644
+index b0a80079682afe6ed36b76a7c8b6318d89212c7d..f31b3d8cc35674aaf3e8e5dc95512582bdc7fe05 100644
 --- a/services/core/java/com/android/server/wm/ActivityStarter.java
 +++ b/services/core/java/com/android/server/wm/ActivityStarter.java
 @@ -96,6 +96,7 @@ import static com.android.window.flags.Flags.balReportAbortedActivityStarts;
@@ -600,17 +647,7 @@ index b0a800796..fbc017ce5 100644
  import android.service.voice.IVoiceInteractionSession;
  import android.text.TextUtils;
  import android.util.Pools.SynchronizedPool;
-@@ -167,6 +169,9 @@ import java.util.function.Supplier;
-  * an activity and associated task and root task.
-  */
- class ActivityStarter {
-+    private static final String LINEAGE_VISIBILITY_BLOCKED_PACKAGES_SETTING =
-+            "lineage_visibility_blocked_packages";
-+
-     private static final String TAG = TAG_WITH_CLASS_NAME ? "ActivityStarter" : TAG_ATM;
-     private static final String TAG_RESULTS = TAG + POSTFIX_RESULTS;
-     private static final String TAG_FOCUS = TAG + POSTFIX_FOCUS;
-@@ -1020,6 +1025,77 @@ class ActivityStarter {
+@@ -1020,6 +1022,77 @@ class ActivityStarter {
          return res;
      }
  
@@ -635,7 +672,7 @@ index b0a800796..fbc017ce5 100644
 +        }
 +        final String blockedPackages = Settings.Secure.getStringForUser(
 +                mService.mContext.getContentResolver(),
-+                LINEAGE_VISIBILITY_BLOCKED_PACKAGES_SETTING,
++                Settings.Secure.LINEAGE_VISIBILITY_BLOCKED_PACKAGES,
 +                userId);
 +        if (TextUtils.isEmpty(blockedPackages)) {
 +            return false;
@@ -688,7 +725,7 @@ index b0a800796..fbc017ce5 100644
      /**
       * Executing activity start request and starts the journey of starting an activity. Here
       * begins with performing several preliminary checks. The normally activity launch flow will
-@@ -1076,6 +1152,13 @@ class ActivityStarter {
+@@ -1076,6 +1149,13 @@ class ActivityStarter {
          final int userId = aInfo != null && aInfo.applicationInfo != null
                  ? UserHandle.getUserId(aInfo.applicationInfo.uid) : 0;
          final int launchMode = aInfo != null ? aInfo.launchMode : 0;
@@ -702,13 +739,11 @@ index b0a800796..fbc017ce5 100644
          if (err == ActivityManager.START_SUCCESS) {
              request.logMessage.append("START u").append(userId).append(" {")
                      .append(intent.toShortString(true, true, true, false))
-
-project frameworks/base/
 diff --git a/services/core/java/com/android/server/wm/ActivityTaskManagerService.java b/services/core/java/com/android/server/wm/ActivityTaskManagerService.java
-index 8606d439e..c6844ab66 100644
+index 7e0b56ce9a4f375145ee91badcf17e9344d29662..2300c681fb638d26b798c1d1cb49eb4e88067d95 100644
 --- a/services/core/java/com/android/server/wm/ActivityTaskManagerService.java
 +++ b/services/core/java/com/android/server/wm/ActivityTaskManagerService.java
-@@ -6321,10 +6321,18 @@ public class ActivityTaskManagerService extends IActivityTaskManager.Stub {
+@@ -6333,10 +6333,18 @@ public class ActivityTaskManagerService extends IActivityTaskManager.Stub {
              IScreenCaptureObserver observer) {
          mAmInternal.enforceCallingPermission(DETECT_SCREEN_CAPTURE,
                  "registerScreenCaptureObserver");
@@ -727,7 +762,7 @@ index 8606d439e..c6844ab66 100644
              }
          }
      }
-@@ -6334,10 +6342,18 @@ public class ActivityTaskManagerService extends IActivityTaskManager.Stub {
+@@ -6346,10 +6354,18 @@ public class ActivityTaskManagerService extends IActivityTaskManager.Stub {
              IScreenCaptureObserver observer) {
          mAmInternal.enforceCallingPermission(DETECT_SCREEN_CAPTURE,
                  "unregisterScreenCaptureObserver");
@@ -746,10 +781,8 @@ index 8606d439e..c6844ab66 100644
              }
          }
      }
-
-project frameworks/base/
 diff --git a/services/core/java/com/android/server/wm/ScreenRecordingCallbackController.java b/services/core/java/com/android/server/wm/ScreenRecordingCallbackController.java
-index 00e1c01bb..9554c19a8 100644
+index 00e1c01bbadb130fd1ee5954c20be0f83c3c581f..9554c19a88b741916c0b2eb62b94c3bd3e6a0d48 100644
 --- a/services/core/java/com/android/server/wm/ScreenRecordingCallbackController.java
 +++ b/services/core/java/com/android/server/wm/ScreenRecordingCallbackController.java
 @@ -30,6 +30,7 @@ import android.os.RemoteException;
@@ -880,13 +913,11 @@ index 00e1c01bb..9554c19a8 100644
              for (int i = 0; i < callbacks.size(); i++) {
                  try {
                      callbacks.get(i).onScreenRecordingStateChanged(visibleInScreenRecording);
-
-project frameworks/base/
 diff --git a/services/core/java/com/android/server/wm/WindowManagerService.java b/services/core/java/com/android/server/wm/WindowManagerService.java
-index dd4c99249..33463b0de 100644
+index c4fd7cad4f8a3a6ee889bbf23bc80865ffb1c2cf..6a941cb8925e6cd237a960efa842181f5f242ab3 100644
 --- a/services/core/java/com/android/server/wm/WindowManagerService.java
 +++ b/services/core/java/com/android/server/wm/WindowManagerService.java
-@@ -10749,8 +10749,13 @@ public class WindowManagerService extends IWindowManager.Stub
+@@ -10755,8 +10755,13 @@ public class WindowManagerService extends IWindowManager.Stub
          synchronized (mGlobalLock) {
              final DisplayContent displayContent = mRoot.getDisplayContent(displayId);
              if (displayContent == null) {
@@ -900,7 +931,7 @@ index dd4c99249..33463b0de 100644
              ArraySet<ComponentName> notifiedApps = new ArraySet<>();
              displayContent.forAllActivities(
                      (ar) -> {
-@@ -10761,6 +10766,8 @@ public class WindowManagerService extends IWindowManager.Stub
+@@ -10767,6 +10772,8 @@ public class WindowManagerService extends IWindowManager.Stub
                          }
                      },
                      true /* traverseTopToBottom */);
@@ -909,11 +940,9 @@ index dd4c99249..33463b0de 100644
              return List.copyOf(notifiedApps);
          }
      }
-
-
 project hardware/lineage/interfaces/
 diff --git a/compatibility_matrices/Android.bp b/compatibility_matrices/Android.bp
-index 3ed4681..c103619 100644
+index 3ed4681d7b917b60255a5f1276f55a37f0b9b97e..c1036194f10891c76ba451cc151ea8c6d7e5cf0f 100644
 --- a/compatibility_matrices/Android.bp
 +++ b/compatibility_matrices/Android.bp
 @@ -4,10 +4,10 @@
@@ -930,577 +959,9 @@ index 3ed4681..c103619 100644
      ],
      product_specific: true,
  }
-
-project hardware/lineage/interfaces/
-diff --git a/compatibility_matrices/compatibility_matrix.lineage.xml b/compatibility_matrices/compatibility_matrix.lineage.xml
-deleted file mode 100644
-index a040337..0000000
---- a/compatibility_matrices/compatibility_matrix.lineage.xml
-+++ /dev/null
-@@ -1,110 +0,0 @@
--<!--
--     SPDX-FileCopyrightText: 2021-2025 The LineageOS Project
--     SPDX-License-Identifier: Apache-2.0
---->
--<compatibility-matrix version="2.0" type="framework">
--    <!-- Radio Config (backend) -->
--    <hal format="hidl" optional="true">
--        <name>lineage.hardware.radio.config</name>
--        <version>1.0-1</version>
--        <interface>
--            <name>IRadioConfig</name>
--            <instance>default</instance>
--        </interface>
--    </hal>
--    <!-- Charging -->
--    <hal format="aidl" optional="true">
--        <name>vendor.lineage.health</name>
--        <version>1-2</version>
--        <interface>
--            <name>IChargingControl</name>
--            <instance>default</instance>
--        </interface>
--        <interface>
--            <name>IFastCharge</name>
--            <instance>default</instance>
--        </interface>
--    </hal>
--    <hal format="aidl" optional="true">
--        <name>vendor.lineage.powershare</name>
--        <version>1</version>
--        <interface>
--            <name>IPowerShare</name>
--            <instance>default</instance>
--        </interface>
--    </hal>
--    <!-- Display -->
--    <hal format="aidl" optional="true">
--        <name>vendor.lineage.livedisplay</name>
--        <version>1</version>
--        <interface>
--            <name>IAdaptiveBacklight</name>
--            <instance>default</instance>
--        </interface>
--        <interface>
--            <name>IAntiFlicker</name>
--            <instance>default</instance>
--        </interface>
--        <interface>
--            <name>IAutoContrast</name>
--            <instance>default</instance>
--        </interface>
--        <interface>
--            <name>IColorBalance</name>
--            <instance>default</instance>
--        </interface>
--        <interface>
--            <name>IColorEnhancement</name>
--            <instance>default</instance>
--        </interface>
--        <interface>
--            <name>IDisplayColorCalibration</name>
--            <instance>default</instance>
--        </interface>
--        <interface>
--            <name>IDisplayModes</name>
--            <instance>default</instance>
--        </interface>
--        <interface>
--            <name>IPictureAdjustment</name>
--            <instance>default</instance>
--        </interface>
--        <interface>
--            <name>IReadingEnhancement</name>
--            <instance>default</instance>
--        </interface>
--        <interface>
--            <name>ISunlightEnhancement</name>
--            <instance>default</instance>
--        </interface>
--    </hal>
--    <!-- Touch -->
--    <hal format="aidl" optional="true">
--        <name>vendor.lineage.touch</name>
--        <version>1</version>
--        <interface>
--            <name>IGloveMode</name>
--            <instance>default</instance>
--        </interface>
--        <interface>
--            <name>IHighTouchPollingRate</name>
--            <instance>default</instance>
--        </interface>
--        <interface>
--            <name>IKeyDisabler</name>
--            <instance>default</instance>
--        </interface>
--        <interface>
--            <name>IKeySwapper</name>
--            <instance>default</instance>
--        </interface>
--        <interface>
--            <name>IStylusMode</name>
--            <instance>default</instance>
--        </interface>
--        <interface>
--            <name>ITouchscreenGesture</name>
--            <instance>default</instance>
--        </interface>
--    </hal>
--</compatibility-matrix>
-
-project hardware/lineage/interfaces/
-diff --git a/health/aidl/default/Android.bp b/health/aidl/default/Android.bp
-index 420a196..12f69e0 100644
---- a/health/aidl/default/Android.bp
-+++ b/health/aidl/default/Android.bp
-@@ -58,7 +58,7 @@ cc_binary {
-     vendor: true,
-     relative_install_path: "hw",
-     init_rc: ["vendor.lineage.health-service.default.rc"],
--    vintf_fragments: ["vendor.lineage.health-service.default.xml"],
-+    vintf_fragments: ["vendor.system.health-service.default.xml"],
-     cflags: select(soong_config_variable("lineage_health", "charging_control_charging_path"), {
-         any @ flag_val: ["-DHEALTH_CHARGING_CONTROL_CHARGING_PATH=\"" + flag_val + "\""],
-         default: [],
-
-project hardware/lineage/interfaces/
-diff --git a/health/aidl/default/service.cpp b/health/aidl/default/service.cpp
-index a3df8f7..f937afd 100644
---- a/health/aidl/default/service.cpp
-+++ b/health/aidl/default/service.cpp
-@@ -19,11 +19,12 @@ int main() {
-     std::shared_ptr<ChargingControl> lh = ndk::SharedRefBase::make<ChargingControl>();
-     std::shared_ptr<FastCharge> fc = ndk::SharedRefBase::make<FastCharge>();
- 
--    std::string instance = std::string() + ChargingControl::descriptor + "/default";
-+    // Keep binder interface unchanged but expose a renamed service instance.
-+    std::string instance = "vendor.system.health.IChargingControl/default";
-     binder_status_t status = AServiceManager_addService(lh->asBinder().get(), instance.c_str());
-     CHECK_EQ(status, STATUS_OK);
- 
--    instance = std::string() + FastCharge::descriptor + "/default";
-+    instance = "vendor.system.health.IFastCharge/default";
-     status = AServiceManager_addService(fc->asBinder().get(), instance.c_str());
-     CHECK_EQ(status, STATUS_OK);
- 
-
-project hardware/lineage/interfaces/
-diff --git a/health/aidl/default/vendor.lineage.health-service.default.xml b/health/aidl/default/vendor.lineage.health-service.default.xml
-deleted file mode 100644
-index 148385b..0000000
---- a/health/aidl/default/vendor.lineage.health-service.default.xml
-+++ /dev/null
-@@ -1,8 +0,0 @@
--<manifest version="1.0" type="device">
--    <hal format="aidl">
--        <name>vendor.lineage.health</name>
--        <version>2</version>
--        <fqname>IChargingControl/default</fqname>
--        <fqname>IFastCharge/default</fqname>
--    </hal>
--</manifest>
-
-project hardware/lineage/interfaces/
-diff --git a/ir/Android.bp b/ir/Android.bp
-index 218df73..6957334 100644
---- a/ir/Android.bp
-+++ b/ir/Android.bp
-@@ -8,7 +8,7 @@ cc_binary {
-     relative_install_path: "hw",
-     vendor: true,
-     init_rc: ["android.hardware.ir-service.lineage.rc"],
--    vintf_fragments: ["android.hardware.ir-service.lineage.xml"],
-+    vintf_fragments: ["android.hardware.ir-service.system.xml"],
-     srcs: [
-         "ConsumerIr.cpp",
-         "service.cpp",
-
-project hardware/lineage/interfaces/
-diff --git a/ir/android.hardware.ir-service.lineage.xml b/ir/android.hardware.ir-service.lineage.xml
-deleted file mode 100644
-index 760539e..0000000
---- a/ir/android.hardware.ir-service.lineage.xml
-+++ /dev/null
-@@ -1,11 +0,0 @@
--<!--
--    SPDX-FileCopyrightText: 2024 The LineageOS Project
--    SPDX-License-Identifier: Apache-2.0
---->
--<manifest version="1.0" type="device">
--    <hal format="aidl">
--        <name>android.hardware.ir</name>
--        <version>1</version>
--        <fqname>IConsumerIr/default</fqname>
--    </hal>
--</manifest>
-
-
-project hardware/xiaomi/
-diff --git a/aidl/touch/Android.bp b/aidl/touch/Android.bp
-index 22110af..9fb08cf 100644
---- a/aidl/touch/Android.bp
-+++ b/aidl/touch/Android.bp
-@@ -7,7 +7,7 @@ cc_binary {
-     name: "vendor.lineage.touch-service.xiaomi",
-     init_rc: ["vendor.lineage.touch-service.xiaomi.rc"],
-     vintf_fragments: select(soong_config_variable("XIAOMI_TOUCH", "HIGH_TOUCH_POLLING_PATH"), {
--        any: ["vendor.lineage.touch-service.xiaomi-htpr.xml"],
-+        any: ["vendor.system.touch-service.xiaomi-htpr.xml"],
-         default: [],
-     }) + select(soong_config_variable("XIAOMI_TOUCH", "KEY_DISABLER_CONTROL_PATH"), {
-         any: ["vendor.lineage.touch-service.xiaomi-kd.xml"],
-
-project hardware/xiaomi/
-diff --git a/aidl/touch/service.cpp b/aidl/touch/service.cpp
-index b025864..376f265 100644
---- a/aidl/touch/service.cpp
-+++ b/aidl/touch/service.cpp
-@@ -24,7 +24,7 @@ int main() {
- 
- #ifdef HTPR_CONTROL_PATH
-     std::shared_ptr<HighTouchPollingRate> htpr = ndk::SharedRefBase::make<HighTouchPollingRate>();
--    const std::string htpr_instance = std::string(HighTouchPollingRate::descriptor) + "/default";
-+    const std::string htpr_instance = "vendor.system.touch.IHighTouchPollingRate/default";
-     status = AServiceManager_addService(htpr->asBinder().get(), htpr_instance.c_str());
-     CHECK_EQ(status, STATUS_OK) << "Failed to add service " << htpr_instance << " " << status;
- #endif
-
-project hardware/xiaomi/
-diff --git a/aidl/touch/vendor.lineage.touch-service.xiaomi-htpr.xml b/aidl/touch/vendor.lineage.touch-service.xiaomi-htpr.xml
-deleted file mode 100644
-index 3c2cd7c..0000000
---- a/aidl/touch/vendor.lineage.touch-service.xiaomi-htpr.xml
-+++ /dev/null
-@@ -1,10 +0,0 @@
--<manifest version="1.0" type="device">
--    <hal format="aidl">
--        <name>vendor.lineage.touch</name>
--        <version>1</version>
--        <interface>
--            <name>IHighTouchPollingRate</name>
--            <instance>default</instance>
--        </interface>
--    </hal>
--</manifest>
-
-
-project lineage-sdk/
-diff --git a/Android.bp b/Android.bp
-index 7461c29..87fa256 100644
---- a/Android.bp
-+++ b/Android.bp
-@@ -5,6 +5,7 @@
- 
- android_app {
-     name: "org.lineageos.platform-res",
-+    stem: "org.system.platform-res",
-     use_resource_processor: false,
-     sdk_version: "core_platform",
-     certificate: "platform",
-@@ -19,7 +20,7 @@ android_app {
-     },
- 
-     // Soong special-cases org.lineageos.platform-res to install this alongside
--    // the libraries at /system_ext/framework/org.lineageos.platform-res.apk.
-+    // the libraries at /system/framework/org.system.platform-res.apk.
- 
-     aaptflags: [
-         "--private-symbols",
-
-project lineage-sdk/
-diff --git a/lineage/lib/main/java/org/lineageos/platform/internal/health/ChargingControlController.java b/lineage/lib/main/java/org/lineageos/platform/internal/health/ChargingControlController.java
-index 8d308e3..f5c4f6b 100644
---- a/lineage/lib/main/java/org/lineageos/platform/internal/health/ChargingControlController.java
-+++ b/lineage/lib/main/java/org/lineageos/platform/internal/health/ChargingControlController.java
-@@ -83,7 +83,7 @@ public class ChargingControlController extends LineageHealthFeature {
-         mContentResolver = mContext.getContentResolver();
-         mChargingControl = IChargingControl.Stub.asInterface(
-                 ServiceManager.waitForDeclaredService(
--                        IChargingControl.DESCRIPTOR + "/default"));
-+                        "vendor.system.health.IChargingControl/default"));
- 
-         if (mChargingControl == null) {
-             Log.i(TAG, "Lineage Health HAL not found");
-
-project lineage-sdk/
-diff --git a/lineage/lib/main/java/org/lineageos/platform/internal/health/FastChargeController.java b/lineage/lib/main/java/org/lineageos/platform/internal/health/FastChargeController.java
-index 620435b..62a72d1 100644
---- a/lineage/lib/main/java/org/lineageos/platform/internal/health/FastChargeController.java
-+++ b/lineage/lib/main/java/org/lineageos/platform/internal/health/FastChargeController.java
-@@ -45,7 +45,7 @@ public class FastChargeController extends LineageHealthFeature {
-         mContentResolver = mContext.getContentResolver();
-         mFastCharge = IFastCharge.Stub.asInterface(
-                 ServiceManager.waitForDeclaredService(
--                        IFastCharge.DESCRIPTOR + "/default"));
-+                        "vendor.system.health.IFastCharge/default"));
- 
-         Resources res = mContext.getResources();
-         mChargingSpeedValues = Stream.of(res.getStringArray(R.array.charging_speed_values))
-
-project lineage-sdk/
-diff --git a/sdk/src/java/lineageos/app/LineageContextConstants.java b/sdk/src/java/lineageos/app/LineageContextConstants.java
-index 07dbc1b..1bbfce9 100644
---- a/sdk/src/java/lineageos/app/LineageContextConstants.java
-+++ b/sdk/src/java/lineageos/app/LineageContextConstants.java
-@@ -43,14 +43,14 @@ public final class LineageContextConstants {
-      *
-      * @hide
-      */
--    public static final String LINEAGE_HARDWARE_SERVICE = "lineagehardware";
-+    public static final String LINEAGE_HARDWARE_SERVICE = "hardwareservice";
- 
-     /**
-      * Manages display color adjustments
-      *
-      * @hide
-      */
--    public static final String LINEAGE_LIVEDISPLAY_SERVICE = "lineagelivedisplay";
-+    public static final String LINEAGE_LIVEDISPLAY_SERVICE = "displayservice";
- 
-     /**
-      * Use with {@link android.content.Context#getSystemService} to retrieve a
-@@ -61,7 +61,7 @@ public final class LineageContextConstants {
-      *
-      * @hide
-      */
--    public static final String LINEAGE_TRUST_INTERFACE = "lineagetrust";
-+    public static final String LINEAGE_TRUST_INTERFACE = "trustinterface";
- 
-     /**
-      * Use with {@link android.content.Context#getSystemService} to retrieve a
-@@ -72,14 +72,14 @@ public final class LineageContextConstants {
-      *
-      * @hide
-      */
--    public static final String LINEAGE_HEALTH_INTERFACE = "lineagehealth";
-+    public static final String LINEAGE_HEALTH_INTERFACE = "healthinterface";
- 
-     /**
-      * Update power menu (GlobalActions)
-      *
-      * @hide
-      */
--    public static final String LINEAGE_GLOBAL_ACTIONS_SERVICE = "lineageglobalactions";
-+    public static final String LINEAGE_GLOBAL_ACTIONS_SERVICE = "globalactions";
- 
-     /**
-      * Features supported by the Lineage SDK.
-
-project lineage-sdk/
-diff --git a/sdk/src/java/lineageos/hardware/LineageHardwareManager.java b/sdk/src/java/lineageos/hardware/LineageHardwareManager.java
-index 3aac77e..7f82064 100644
---- a/sdk/src/java/lineageos/hardware/LineageHardwareManager.java
-+++ b/sdk/src/java/lineageos/hardware/LineageHardwareManager.java
-@@ -293,7 +293,7 @@ public final class LineageHardwareManager {
-                         IDisplayModes.DESCRIPTOR + "/default");
-             case FEATURE_HIGH_TOUCH_POLLING_RATE:
-                 return ServiceManager.waitForDeclaredService(
--                        IHighTouchPollingRate.DESCRIPTOR + "/default");
-+                        "vendor.system.touch.IHighTouchPollingRate/default");
-             case FEATURE_HIGH_TOUCH_SENSITIVITY:
-                 return ServiceManager.waitForDeclaredService(
-                         IGloveMode.DESCRIPTOR + "/default");
-
-project packages/apps/LineageParts/
-diff --git a/src/org/lineageos/lineageparts/widget/PackageListAdapter.java b/src/org/lineageos/lineageparts/widget/PackageListAdapter.java
-index a38ae70..96ff584 100644
---- a/src/org/lineageos/lineageparts/widget/PackageListAdapter.java
-+++ b/src/org/lineageos/lineageparts/widget/PackageListAdapter.java
-@@ -26,9 +26,11 @@ import android.widget.TextView;
- import org.lineageos.lineageparts.R;
- 
- import java.util.Collections;
-+import java.util.HashMap;
- import java.util.HashSet;
- import java.util.LinkedList;
- import java.util.List;
-+import java.util.Map;
- import java.util.Set;
- import java.util.TreeSet;
- 
-@@ -37,6 +39,7 @@ public class PackageListAdapter extends BaseAdapter implements Runnable {
-     private final LayoutInflater mInflater;
-     private final List<PackageItem> mInstalledPackages = new LinkedList<>();
-     private Set<String> mExcludedPackages = new HashSet<>();
-+    private volatile boolean mIncludeSystemApps = false;
- 
-     // Packages which don't have launcher icons, but which we want to show nevertheless
-     private static final String[] PACKAGE_WHITELIST = new String[] {
-@@ -152,6 +155,7 @@ public class PackageListAdapter extends BaseAdapter implements Runnable {
-         mainIntent.addCategory(Intent.CATEGORY_LAUNCHER);
-         List<ResolveInfo> installedAppsInfo = mPm.queryIntentActivities(mainIntent,
-                 PackageManager.ResolveInfoFlags.of(0));
-+        final Map<String, PackageItem> packageItemMap = new HashMap<>();
- 
-         for (ResolveInfo info : installedAppsInfo) {
-             ApplicationInfo appInfo = info.activityInfo.applicationInfo;
-@@ -159,26 +163,47 @@ public class PackageListAdapter extends BaseAdapter implements Runnable {
-                 continue;
-             }
- 
--            final PackageItem item = new PackageItem(appInfo.packageName,
--                    appInfo.loadLabel(mPm), appInfo.loadIcon(mPm));
-+            final PackageItem item = packageItemMap.computeIfAbsent(appInfo.packageName, packageName ->
-+                    new PackageItem(packageName, appInfo.loadLabel(mPm), appInfo.loadIcon(mPm)));
-             item.activityTitles.add(info.loadLabel(mPm));
--            mHandler.obtainMessage(0, item).sendToTarget();
-         }
- 
-         for (String packageName : PACKAGE_WHITELIST) {
-             if (mExcludedPackages.contains(packageName)) {
-                 continue;
-             }
-+            if (packageItemMap.containsKey(packageName)) {
-+                continue;
-+            }
-             try {
-                 ApplicationInfo appInfo = mPm.getApplicationInfo(packageName,
-                         PackageManager.ApplicationInfoFlags.of(0));
-                 final PackageItem item = new PackageItem(appInfo.packageName,
-                         appInfo.loadLabel(mPm), appInfo.loadIcon(mPm));
--                mHandler.obtainMessage(0, item).sendToTarget();
-+                packageItemMap.put(packageName, item);
-             } catch (PackageManager.NameNotFoundException ignored) {
-                 // package not present, so nothing to add -> ignore it
-             }
-         }
-+
-+        if (mIncludeSystemApps) {
-+            final List<ApplicationInfo> installedApps = mPm.getInstalledApplications(
-+                    PackageManager.ApplicationInfoFlags.of(0));
-+            for (ApplicationInfo appInfo : installedApps) {
-+                if (mExcludedPackages.contains(appInfo.packageName)
-+                        || packageItemMap.containsKey(appInfo.packageName)
-+                        || !isSystemApp(appInfo)) {
-+                    continue;
-+                }
-+                final PackageItem item = new PackageItem(appInfo.packageName,
-+                        appInfo.loadLabel(mPm), appInfo.loadIcon(mPm));
-+                packageItemMap.put(appInfo.packageName, item);
-+            }
-+        }
-+
-+        for (PackageItem item : packageItemMap.values()) {
-+            mHandler.obtainMessage(0, item).sendToTarget();
-+        }
-     }
- 
-     public void setExcludedPackages(HashSet<String> packages) {
-@@ -186,6 +211,19 @@ public class PackageListAdapter extends BaseAdapter implements Runnable {
-         reloadList();
-     }
- 
-+    public void setIncludeSystemApps(boolean includeSystemApps) {
-+        if (mIncludeSystemApps == includeSystemApps) {
-+            return;
-+        }
-+        mIncludeSystemApps = includeSystemApps;
-+        reloadList();
-+    }
-+
-+    private static boolean isSystemApp(ApplicationInfo appInfo) {
-+        return (appInfo.flags & (ApplicationInfo.FLAG_SYSTEM
-+                | ApplicationInfo.FLAG_UPDATED_SYSTEM_APP)) != 0;
-+    }
-+
-     private static class ViewHolder {
-         TextView title;
-         TextView summary;
-
-
-project packages/apps/Settings/
-diff --git a/res/values/cm_strings.xml b/res/values/cm_strings.xml
-index 38966af..38ba209 100644
---- a/res/values/cm_strings.xml
-+++ b/res/values/cm_strings.xml
-@@ -36,6 +36,8 @@
-     <string name="berry_black_theme_title">Pure black</string>
-     <string name="berry_black_theme_summary">Pure black background for dark theme</string>
- 
-+    <!-- TEE soft debug -->
-+
-     <!-- Device Info screen. LineageOS legal. -->
-     <string name="lineagelicense_title">LineageOS legal</string>
- 
-
-project packages/apps/Settings/
-diff --git a/src/com/android/settings/spa/app/appinfo/AppInfoSettings.kt b/src/com/android/settings/spa/app/appinfo/AppInfoSettings.kt
-index 2004757..768cf4f 100644
---- a/src/com/android/settings/spa/app/appinfo/AppInfoSettings.kt
-+++ b/src/com/android/settings/spa/app/appinfo/AppInfoSettings.kt
-@@ -147,6 +147,8 @@ private fun AppInfoSettings(packageInfoPresenter: PackageInfoPresenter) {
-             AppAllServicesPreference(app)
-             AppNotificationPreference(app)
-             AppPermissionPreference(app)
-+            LineageAppVisibilityBlockSwitchPreference(app)
-+            PlayStoreInstallSpoofSwitchPreference(app)
-             ManageTargetAppFunctionAccessPreference(app)
-             ManageAgentAppFunctionAccessPreference(app)
-             AppStoragePreference(app)
-
-
-project system/sepolicy/
-diff --git a/tests/sepolicy_tests.py b/tests/sepolicy_tests.py
-index d820605..dc24308 100644
---- a/tests/sepolicy_tests.py
-+++ b/tests/sepolicy_tests.py
-@@ -82,6 +82,9 @@ def TestVendorTypeViolations(pol):
-     partitions = ["/vendor/", "/odm/"]
-     exceptions = [
-         "/vendor/etc/selinux/",
-+        "/vendor/etc/init/android.hardware.ir-service.lineage.rc",
-+        "/vendor/etc/init/vendor.lineage.health-service.default.rc",
-+        "/vendor/etc/init/vendor.lineage.touch-service.xiaomi.rc",
-         "/vendor/odm/etc/selinux/",
-         "/odm/etc/selinux/",
-     ]
-
-
-project device/lineage/sepolicy/
-diff --git a/common/private/lineage_platform_framework.te b/common/private/lineage_platform_framework.te
-new file mode 100644
-index 0000000..7d81ffe
---- /dev/null
-+++ b/common/private/lineage_platform_framework.te
-@@ -0,0 +1 @@
-+allow { appdomain coredomain -untrusted_app_all } lineage_platform_framework_file:file r_file_perms;
-
-
-project device/lineage/sepolicy/
-diff --git a/common/private/lineage_privapp_pkg.te b/common/private/lineage_privapp_pkg.te
-new file mode 100644
-index 0000000..d04a987
---- /dev/null
-+++ b/common/private/lineage_privapp_pkg.te
-@@ -0,0 +1,9 @@
-+# Keep selected /system_ext/priv-app Lineage packages out of untrusted app reach.
-+allow system_server lineage_privapp_pkg_file:dir r_dir_perms;
-+allow system_server lineage_privapp_pkg_file:file r_file_perms;
-+allow system_server lineage_privapp_pkg_file:lnk_file r_file_perms;
-+
-+# Trusted app domains that may still need visibility.
-+allow { platform_app system_app priv_app } lineage_privapp_pkg_file:dir r_dir_perms;
-+allow { platform_app system_app priv_app } lineage_privapp_pkg_file:file r_file_perms;
-+allow { platform_app system_app priv_app } lineage_privapp_pkg_file:lnk_file r_file_perms;
-
-
-project device/lineage/sepolicy/
-diff --git a/common/private/lineage_visibility_access.te b/common/private/lineage_visibility_access.te
-new file mode 100644
-index 0000000..697eb11
---- /dev/null
-+++ b/common/private/lineage_visibility_access.te
-@@ -0,0 +1,3 @@
-+# Allow trusted app domains to read relabeled Lineage permission XMLs if needed.
-+allow platform_app lineage_permission_file:file r_file_perms;
-+allow system_app lineage_permission_file:file r_file_perms;
-
-
-project hardware/lineage/interfaces/
 diff --git a/compatibility_matrices/compatibility_matrix.system.xml b/compatibility_matrices/compatibility_matrix.system.xml
 new file mode 100644
-index 0000000..2bf3be2
+index 0000000000000000000000000000000000000000..2bf3be248ad7b2d145aba8d90849e157a3adfe31
 --- /dev/null
 +++ b/compatibility_matrices/compatibility_matrix.system.xml
 @@ -0,0 +1,118 @@
@@ -1622,12 +1083,41 @@ index 0000000..2bf3be2
 +        </interface>
 +    </hal>
 +</compatibility-matrix>
-
-
-project hardware/lineage/interfaces/
+diff --git a/health/aidl/default/Android.bp b/health/aidl/default/Android.bp
+index 420a1964f50a62990f02829a7f9431f55e7caa95..12f69e022e4cbfc10cedf467ec8e7662784d9498 100644
+--- a/health/aidl/default/Android.bp
++++ b/health/aidl/default/Android.bp
+@@ -58,7 +58,7 @@ cc_binary {
+     vendor: true,
+     relative_install_path: "hw",
+     init_rc: ["vendor.lineage.health-service.default.rc"],
+-    vintf_fragments: ["vendor.lineage.health-service.default.xml"],
++    vintf_fragments: ["vendor.system.health-service.default.xml"],
+     cflags: select(soong_config_variable("lineage_health", "charging_control_charging_path"), {
+         any @ flag_val: ["-DHEALTH_CHARGING_CONTROL_CHARGING_PATH=\"" + flag_val + "\""],
+         default: [],
+diff --git a/health/aidl/default/service.cpp b/health/aidl/default/service.cpp
+index a3df8f7607b2137c23be3b7e3acfa3770d4bedda..f937afd5941652e21254b6bfbfa242bec1409dd1 100644
+--- a/health/aidl/default/service.cpp
++++ b/health/aidl/default/service.cpp
+@@ -19,11 +19,12 @@ int main() {
+     std::shared_ptr<ChargingControl> lh = ndk::SharedRefBase::make<ChargingControl>();
+     std::shared_ptr<FastCharge> fc = ndk::SharedRefBase::make<FastCharge>();
+ 
+-    std::string instance = std::string() + ChargingControl::descriptor + "/default";
++    // Keep binder interface unchanged but expose a renamed service instance.
++    std::string instance = "vendor.system.health.IChargingControl/default";
+     binder_status_t status = AServiceManager_addService(lh->asBinder().get(), instance.c_str());
+     CHECK_EQ(status, STATUS_OK);
+ 
+-    instance = std::string() + FastCharge::descriptor + "/default";
++    instance = "vendor.system.health.IFastCharge/default";
+     status = AServiceManager_addService(fc->asBinder().get(), instance.c_str());
+     CHECK_EQ(status, STATUS_OK);
+ 
 diff --git a/health/aidl/default/vendor.system.health-service.default.xml b/health/aidl/default/vendor.system.health-service.default.xml
 new file mode 100644
-index 0000000..82ea457
+index 0000000000000000000000000000000000000000..82ea457e14fbee7756fe68d422f7ee4376ca4928
 --- /dev/null
 +++ b/health/aidl/default/vendor.system.health-service.default.xml
 @@ -0,0 +1,12 @@
@@ -1643,12 +1133,22 @@ index 0000000..82ea457
 +        <fqname>IFastCharge/default</fqname>
 +    </hal>
 +</manifest>
-
-
-project hardware/lineage/interfaces/
+diff --git a/ir/Android.bp b/ir/Android.bp
+index 218df73858c744418c45c283a73d57fd988128a9..6957334cd8671acc9a74e267a0a58e5d1094676c 100644
+--- a/ir/Android.bp
++++ b/ir/Android.bp
+@@ -8,7 +8,7 @@ cc_binary {
+     relative_install_path: "hw",
+     vendor: true,
+     init_rc: ["android.hardware.ir-service.lineage.rc"],
+-    vintf_fragments: ["android.hardware.ir-service.lineage.xml"],
++    vintf_fragments: ["android.hardware.ir-service.system.xml"],
+     srcs: [
+         "ConsumerIr.cpp",
+         "service.cpp",
 diff --git a/ir/android.hardware.ir-service.system.xml b/ir/android.hardware.ir-service.system.xml
 new file mode 100644
-index 0000000..760539e
+index 0000000000000000000000000000000000000000..760539e2442caca9279fb0d83733dfbd34508529
 --- /dev/null
 +++ b/ir/android.hardware.ir-service.system.xml
 @@ -0,0 +1,11 @@
@@ -1663,12 +1163,36 @@ index 0000000..760539e
 +        <fqname>IConsumerIr/default</fqname>
 +    </hal>
 +</manifest>
-
-
 project hardware/xiaomi/
+diff --git a/aidl/touch/Android.bp b/aidl/touch/Android.bp
+index 22110af6681cfb8a59635f22002222db183ec58b..9fb08cf521b5c1b40ebb6add52a1a3bfa471427a 100644
+--- a/aidl/touch/Android.bp
++++ b/aidl/touch/Android.bp
+@@ -7,7 +7,7 @@ cc_binary {
+     name: "vendor.lineage.touch-service.xiaomi",
+     init_rc: ["vendor.lineage.touch-service.xiaomi.rc"],
+     vintf_fragments: select(soong_config_variable("XIAOMI_TOUCH", "HIGH_TOUCH_POLLING_PATH"), {
+-        any: ["vendor.lineage.touch-service.xiaomi-htpr.xml"],
++        any: ["vendor.system.touch-service.xiaomi-htpr.xml"],
+         default: [],
+     }) + select(soong_config_variable("XIAOMI_TOUCH", "KEY_DISABLER_CONTROL_PATH"), {
+         any: ["vendor.lineage.touch-service.xiaomi-kd.xml"],
+diff --git a/aidl/touch/service.cpp b/aidl/touch/service.cpp
+index b025864bfb3042210e56e929437f4bcb7d27e5d2..376f265e2d55b42887af04b32905013039dac6fe 100644
+--- a/aidl/touch/service.cpp
++++ b/aidl/touch/service.cpp
+@@ -24,7 +24,7 @@ int main() {
+ 
+ #ifdef HTPR_CONTROL_PATH
+     std::shared_ptr<HighTouchPollingRate> htpr = ndk::SharedRefBase::make<HighTouchPollingRate>();
+-    const std::string htpr_instance = std::string(HighTouchPollingRate::descriptor) + "/default";
++    const std::string htpr_instance = "vendor.system.touch.IHighTouchPollingRate/default";
+     status = AServiceManager_addService(htpr->asBinder().get(), htpr_instance.c_str());
+     CHECK_EQ(status, STATUS_OK) << "Failed to add service " << htpr_instance << " " << status;
+ #endif
 diff --git a/aidl/touch/vendor.system.touch-service.xiaomi-htpr.xml b/aidl/touch/vendor.system.touch-service.xiaomi-htpr.xml
 new file mode 100644
-index 0000000..1e3e664
+index 0000000000000000000000000000000000000000..1e3e66464404b2f7fb4ff771d59309dd766bfe26
 --- /dev/null
 +++ b/aidl/touch/vendor.system.touch-service.xiaomi-htpr.xml
 @@ -0,0 +1,10 @@
@@ -1682,15 +1206,252 @@ index 0000000..1e3e664
 +        </interface>
 +    </hal>
 +</manifest>
-
-
+project lineage-sdk/
+diff --git a/Android.bp b/Android.bp
+index 074a4cc9dabcb94cbf4e53b821fd9e595210161d..255c3a1507b5f897c28af9b5d2cc0f1e15283dca 100644
+--- a/Android.bp
++++ b/Android.bp
+@@ -5,6 +5,7 @@
+ 
+ android_app {
+     name: "org.lineageos.platform-res",
++    stem: "org.system.platform-res",
+     use_resource_processor: false,
+     sdk_version: "core_platform",
+     certificate: "platform",
+@@ -19,7 +20,7 @@ android_app {
+     },
+ 
+     // Soong special-cases org.lineageos.platform-res to install this alongside
+-    // the libraries at /system_ext/framework/org.lineageos.platform-res.apk.
++    // the libraries at /system/framework/org.system.platform-res.apk.
+ 
+     aaptflags: [
+         "--private-symbols",
+diff --git a/lineage/lib/main/java/org/lineageos/platform/internal/health/ChargingControlController.java b/lineage/lib/main/java/org/lineageos/platform/internal/health/ChargingControlController.java
+index b6a99ef2ff46fb7dd66527c3f86cdb983f4916b1..3ad11ac0253810329efbad18cc936f42bd61b7d3 100644
+--- a/lineage/lib/main/java/org/lineageos/platform/internal/health/ChargingControlController.java
++++ b/lineage/lib/main/java/org/lineageos/platform/internal/health/ChargingControlController.java
+@@ -83,7 +83,7 @@ public class ChargingControlController extends LineageHealthFeature {
+         mContentResolver = mContext.getContentResolver();
+         mChargingControl = IChargingControl.Stub.asInterface(
+                 ServiceManager.waitForDeclaredService(
+-                        IChargingControl.DESCRIPTOR + "/default"));
++                        "vendor.system.health.IChargingControl/default"));
+ 
+         if (mChargingControl == null) {
+             Log.i(TAG, "Lineage Health HAL not found");
+diff --git a/lineage/lib/main/java/org/lineageos/platform/internal/health/FastChargeController.java b/lineage/lib/main/java/org/lineageos/platform/internal/health/FastChargeController.java
+index 5bb70085979ea09b1e73cd80e1a0edd2dace291a..f36ebc7634ecace7c56074ae22a8274686cef1b0 100644
+--- a/lineage/lib/main/java/org/lineageos/platform/internal/health/FastChargeController.java
++++ b/lineage/lib/main/java/org/lineageos/platform/internal/health/FastChargeController.java
+@@ -45,7 +45,7 @@ public class FastChargeController extends LineageHealthFeature {
+         mContentResolver = mContext.getContentResolver();
+         mFastCharge = IFastCharge.Stub.asInterface(
+                 ServiceManager.waitForDeclaredService(
+-                        IFastCharge.DESCRIPTOR + "/default"));
++                        "vendor.system.health.IFastCharge/default"));
+ 
+         Resources res = mContext.getResources();
+         mChargingSpeedValues = Stream.of(res.getStringArray(R.array.charging_speed_values))
+diff --git a/sdk/src/java/lineageos/app/LineageContextConstants.java b/sdk/src/java/lineageos/app/LineageContextConstants.java
+index 84acb5416cd71dcb7e6ccaade6d4210dca837f86..45a567b6ac2f69aa64c981348c640368d6d80817 100644
+--- a/sdk/src/java/lineageos/app/LineageContextConstants.java
++++ b/sdk/src/java/lineageos/app/LineageContextConstants.java
+@@ -43,14 +43,14 @@ public final class LineageContextConstants {
+      *
+      * @hide
+      */
+-    public static final String LINEAGE_HARDWARE_SERVICE = "lineagehardware";
++    public static final String LINEAGE_HARDWARE_SERVICE = "hardwareservice";
+ 
+     /**
+      * Manages display color adjustments
+      *
+      * @hide
+      */
+-    public static final String LINEAGE_LIVEDISPLAY_SERVICE = "lineagelivedisplay";
++    public static final String LINEAGE_LIVEDISPLAY_SERVICE = "displayservice";
+ 
+     /**
+      * Use with {@link android.content.Context#getSystemService} to retrieve a
+@@ -61,7 +61,7 @@ public final class LineageContextConstants {
+      *
+      * @hide
+      */
+-    public static final String LINEAGE_TRUST_INTERFACE = "lineagetrust";
++    public static final String LINEAGE_TRUST_INTERFACE = "trustinterface";
+ 
+     /**
+      * Use with {@link android.content.Context#getSystemService} to retrieve a
+@@ -72,14 +72,14 @@ public final class LineageContextConstants {
+      *
+      * @hide
+      */
+-    public static final String LINEAGE_HEALTH_INTERFACE = "lineagehealth";
++    public static final String LINEAGE_HEALTH_INTERFACE = "healthinterface";
+ 
+     /**
+      * Update power menu (GlobalActions)
+      *
+      * @hide
+      */
+-    public static final String LINEAGE_GLOBAL_ACTIONS_SERVICE = "lineageglobalactions";
++    public static final String LINEAGE_GLOBAL_ACTIONS_SERVICE = "globalactions";
+ 
+     /**
+      * Features supported by the Lineage SDK.
+diff --git a/sdk/src/java/lineageos/hardware/LineageHardwareManager.java b/sdk/src/java/lineageos/hardware/LineageHardwareManager.java
+index 9e1c894979c59f8d0c8115323c58d25201dc7412..c7b33f65157c4b6b7c8cd4e598a27afef8e9c530 100644
+--- a/sdk/src/java/lineageos/hardware/LineageHardwareManager.java
++++ b/sdk/src/java/lineageos/hardware/LineageHardwareManager.java
+@@ -293,7 +293,7 @@ public final class LineageHardwareManager {
+                         IDisplayModes.DESCRIPTOR + "/default");
+             case FEATURE_HIGH_TOUCH_POLLING_RATE:
+                 return ServiceManager.waitForDeclaredService(
+-                        IHighTouchPollingRate.DESCRIPTOR + "/default");
++                        "vendor.system.touch.IHighTouchPollingRate/default");
+             case FEATURE_HIGH_TOUCH_SENSITIVITY:
+                 return ServiceManager.waitForDeclaredService(
+                         IGloveMode.DESCRIPTOR + "/default");
+project packages/apps/LineageParts/
+diff --git a/src/org/lineageos/lineageparts/widget/PackageListAdapter.java b/src/org/lineageos/lineageparts/widget/PackageListAdapter.java
+index c5b300c5c384a6fa4fcd26c1c85d8af12a5bd2d1..f7ffdf524ca39172ec8e59d2346a67b8fcccfb36 100644
+--- a/src/org/lineageos/lineageparts/widget/PackageListAdapter.java
++++ b/src/org/lineageos/lineageparts/widget/PackageListAdapter.java
+@@ -26,9 +26,11 @@ import android.widget.TextView;
+ import org.lineageos.lineageparts.R;
+ 
+ import java.util.Collections;
++import java.util.HashMap;
+ import java.util.HashSet;
+ import java.util.LinkedList;
+ import java.util.List;
++import java.util.Map;
+ import java.util.Set;
+ import java.util.TreeSet;
+ 
+@@ -37,6 +39,7 @@ public class PackageListAdapter extends BaseAdapter implements Runnable {
+     private final LayoutInflater mInflater;
+     private final List<PackageItem> mInstalledPackages = new LinkedList<>();
+     private Set<String> mExcludedPackages = new HashSet<>();
++    private volatile boolean mIncludeSystemApps = false;
+ 
+     // Packages which don't have launcher icons, but which we want to show nevertheless
+     private static final String[] PACKAGE_WHITELIST = new String[] {
+@@ -152,6 +155,7 @@ public class PackageListAdapter extends BaseAdapter implements Runnable {
+         mainIntent.addCategory(Intent.CATEGORY_LAUNCHER);
+         List<ResolveInfo> installedAppsInfo = mPm.queryIntentActivities(mainIntent,
+                 PackageManager.ResolveInfoFlags.of(0));
++        final Map<String, PackageItem> packageItemMap = new HashMap<>();
+ 
+         for (ResolveInfo info : installedAppsInfo) {
+             ApplicationInfo appInfo = info.activityInfo.applicationInfo;
+@@ -159,26 +163,47 @@ public class PackageListAdapter extends BaseAdapter implements Runnable {
+                 continue;
+             }
+ 
+-            final PackageItem item = new PackageItem(appInfo.packageName,
+-                    appInfo.loadLabel(mPm), appInfo.loadIcon(mPm));
++            final PackageItem item = packageItemMap.computeIfAbsent(appInfo.packageName, packageName ->
++                    new PackageItem(packageName, appInfo.loadLabel(mPm), appInfo.loadIcon(mPm)));
+             item.activityTitles.add(info.loadLabel(mPm));
+-            mHandler.obtainMessage(0, item).sendToTarget();
+         }
+ 
+         for (String packageName : PACKAGE_WHITELIST) {
+             if (mExcludedPackages.contains(packageName)) {
+                 continue;
+             }
++            if (packageItemMap.containsKey(packageName)) {
++                continue;
++            }
+             try {
+                 ApplicationInfo appInfo = mPm.getApplicationInfo(packageName,
+                         PackageManager.ApplicationInfoFlags.of(0));
+                 final PackageItem item = new PackageItem(appInfo.packageName,
+                         appInfo.loadLabel(mPm), appInfo.loadIcon(mPm));
+-                mHandler.obtainMessage(0, item).sendToTarget();
++                packageItemMap.put(packageName, item);
+             } catch (PackageManager.NameNotFoundException ignored) {
+                 // package not present, so nothing to add -> ignore it
+             }
+         }
++
++        if (mIncludeSystemApps) {
++            final List<ApplicationInfo> installedApps = mPm.getInstalledApplications(
++                    PackageManager.ApplicationInfoFlags.of(0));
++            for (ApplicationInfo appInfo : installedApps) {
++                if (mExcludedPackages.contains(appInfo.packageName)
++                        || packageItemMap.containsKey(appInfo.packageName)
++                        || !isSystemApp(appInfo)) {
++                    continue;
++                }
++                final PackageItem item = new PackageItem(appInfo.packageName,
++                        appInfo.loadLabel(mPm), appInfo.loadIcon(mPm));
++                packageItemMap.put(appInfo.packageName, item);
++            }
++        }
++
++        for (PackageItem item : packageItemMap.values()) {
++            mHandler.obtainMessage(0, item).sendToTarget();
++        }
+     }
+ 
+     public void setExcludedPackages(HashSet<String> packages) {
+@@ -186,6 +211,19 @@ public class PackageListAdapter extends BaseAdapter implements Runnable {
+         reloadList();
+     }
+ 
++    public void setIncludeSystemApps(boolean includeSystemApps) {
++        if (mIncludeSystemApps == includeSystemApps) {
++            return;
++        }
++        mIncludeSystemApps = includeSystemApps;
++        reloadList();
++    }
++
++    private static boolean isSystemApp(ApplicationInfo appInfo) {
++        return (appInfo.flags & (ApplicationInfo.FLAG_SYSTEM
++                | ApplicationInfo.FLAG_UPDATED_SYSTEM_APP)) != 0;
++    }
++
+     private static class ViewHolder {
+         TextView title;
+         TextView summary;
 project packages/apps/Settings/
+diff --git a/res/values/cm_strings.xml b/res/values/cm_strings.xml
+index 38966afd63ec25b876899880cd90fac1f55409ad..38ba209c77b1194378be440d145c81a13870ca55 100644
+--- a/res/values/cm_strings.xml
++++ b/res/values/cm_strings.xml
+@@ -36,6 +36,8 @@
+     <string name="berry_black_theme_title">Pure black</string>
+     <string name="berry_black_theme_summary">Pure black background for dark theme</string>
+ 
++    <!-- TEE soft debug -->
++
+     <!-- Device Info screen. LineageOS legal. -->
+     <string name="lineagelicense_title">LineageOS legal</string>
+ 
+diff --git a/src/com/android/settings/spa/app/appinfo/AppInfoSettings.kt b/src/com/android/settings/spa/app/appinfo/AppInfoSettings.kt
+index 2004757ed03de19f0d2ae1953f681e375ac1d0f1..768cf4f85e5be052678b67a81e0f8571afa87ac2 100644
+--- a/src/com/android/settings/spa/app/appinfo/AppInfoSettings.kt
++++ b/src/com/android/settings/spa/app/appinfo/AppInfoSettings.kt
+@@ -147,6 +147,8 @@ private fun AppInfoSettings(packageInfoPresenter: PackageInfoPresenter) {
+             AppAllServicesPreference(app)
+             AppNotificationPreference(app)
+             AppPermissionPreference(app)
++            LineageAppVisibilityBlockSwitchPreference(app)
++            PlayStoreInstallSpoofSwitchPreference(app)
+             ManageTargetAppFunctionAccessPreference(app)
+             ManageAgentAppFunctionAccessPreference(app)
+             AppStoragePreference(app)
 diff --git a/src/com/android/settings/spa/app/appinfo/LineageAppVisibilityBlockSwitchPreference.kt b/src/com/android/settings/spa/app/appinfo/LineageAppVisibilityBlockSwitchPreference.kt
 new file mode 100644
-index 0000000..0b77c70
+index 0000000000000000000000000000000000000000..20c01ad977af91a382183d6ce9ce3c8fec840df5
 --- /dev/null
 +++ b/src/com/android/settings/spa/app/appinfo/LineageAppVisibilityBlockSwitchPreference.kt
-@@ -0,0 +1,107 @@
+@@ -0,0 +1,105 @@
 +/*
 + * Copyright (C) 2026 The Android Open Source Project
 + *
@@ -1723,8 +1484,6 @@ index 0000000..0b77c70
 +import com.android.settingslib.spaprivileged.model.app.userId
 +import kotlinx.coroutines.flow.MutableStateFlow
 +
-+private const val LINEAGE_VISIBILITY_BLOCKED_PACKAGES_SETTING =
-+    "lineage_visibility_blocked_packages"
 +private const val LINEAGE_TARGET_PACKAGE = "org.lineageos.updater"
 +
 +@Composable
@@ -1777,7 +1536,7 @@ index 0000000..0b77c70
 +        val value =
 +            Settings.Secure.getStringForUser(
 +                context.contentResolver,
-+                LINEAGE_VISIBILITY_BLOCKED_PACKAGES_SETTING,
++                Settings.Secure.LINEAGE_VISIBILITY_BLOCKED_PACKAGES,
 +                app.userId,
 +            ) ?: return emptySet()
 +        return value.split(',').mapNotNull { item ->
@@ -1791,22 +1550,19 @@ index 0000000..0b77c70
 +        return runCatching {
 +            Settings.Secure.putStringForUser(
 +                context.contentResolver,
-+                LINEAGE_VISIBILITY_BLOCKED_PACKAGES_SETTING,
++                Settings.Secure.LINEAGE_VISIBILITY_BLOCKED_PACKAGES,
 +                if (value.isEmpty()) null else value,
 +                app.userId,
 +            )
 +        }.getOrDefault(false)
 +    }
 +}
-
-
-project packages/apps/Settings/
 diff --git a/src/com/android/settings/spa/app/appinfo/PlayStoreInstallSpoofSwitchPreference.kt b/src/com/android/settings/spa/app/appinfo/PlayStoreInstallSpoofSwitchPreference.kt
 new file mode 100644
-index 0000000..24b90d3
+index 0000000000000000000000000000000000000000..1be29ff5fc8065a3c481262564c343f54a9e3d38
 --- /dev/null
 +++ b/src/com/android/settings/spa/app/appinfo/PlayStoreInstallSpoofSwitchPreference.kt
-@@ -0,0 +1,107 @@
+@@ -0,0 +1,105 @@
 +/*
 + * Copyright (C) 2026 The Android Open Source Project
 + *
@@ -1839,8 +1595,6 @@ index 0000000..24b90d3
 +import com.android.settingslib.spaprivileged.model.app.userId
 +import kotlinx.coroutines.flow.MutableStateFlow
 +
-+private const val LINEAGE_PLAY_STORE_INSTALL_SPOOF_PACKAGES_SETTING =
-+    "lineage_play_store_install_spoof_packages"
 +private const val LINEAGE_TARGET_PACKAGE = "org.lineageos.updater"
 +
 +@Composable
@@ -1893,7 +1647,7 @@ index 0000000..24b90d3
 +        val value =
 +            Settings.Secure.getStringForUser(
 +                context.contentResolver,
-+                LINEAGE_PLAY_STORE_INSTALL_SPOOF_PACKAGES_SETTING,
++                Settings.Secure.LINEAGE_PLAY_STORE_INSTALL_SPOOF_PACKAGES,
 +                app.userId,
 +            ) ?: return emptySet()
 +        return value.split(',').mapNotNull { item ->
@@ -1907,12 +1661,25 @@ index 0000000..24b90d3
 +        return runCatching {
 +            Settings.Secure.putStringForUser(
 +                context.contentResolver,
-+                LINEAGE_PLAY_STORE_INSTALL_SPOOF_PACKAGES_SETTING,
++                Settings.Secure.LINEAGE_PLAY_STORE_INSTALL_SPOOF_PACKAGES,
 +                if (value.isEmpty()) null else value,
 +                app.userId,
 +            )
 +        }.getOrDefault(false)
 +    }
 +}
-
-
+project system/sepolicy/
+diff --git a/tests/sepolicy_tests.py b/tests/sepolicy_tests.py
+index d820605bfa8df7303b34e4244c6e9bcb151ce7a4..dc24308365695b8779e9f33ccbcb042916a6b95d 100644
+--- a/tests/sepolicy_tests.py
++++ b/tests/sepolicy_tests.py
+@@ -82,6 +82,9 @@ def TestVendorTypeViolations(pol):
+     partitions = ["/vendor/", "/odm/"]
+     exceptions = [
+         "/vendor/etc/selinux/",
++        "/vendor/etc/init/android.hardware.ir-service.lineage.rc",
++        "/vendor/etc/init/vendor.lineage.health-service.default.rc",
++        "/vendor/etc/init/vendor.lineage.touch-service.xiaomi.rc",
+         "/vendor/odm/etc/selinux/",
+         "/odm/etc/selinux/",
+     ]
